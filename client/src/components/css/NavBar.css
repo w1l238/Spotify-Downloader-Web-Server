@@ -1,0 +1,94 @@
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+    backdrop-filter: blur(10px); /* Glass blur effect */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Light border */
+    border-radius: 2rem; /* Rounded corners */
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    color: white;
+    min-height: 4rem;
+    position: relative;
+    margin: 1rem; /* Add some margin to show the background around the navbar */
+}
+
+.navbar-title a {
+    color: white;
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.navbar-search {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40%;
+    max-width: 40rem;
+    display: flex;
+}
+
+.navbar .search-container {
+    display: flex;
+    flex-grow: 1;
+    background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
+    backdrop-filter: blur(5px); /* Glass blur effect */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Light border */
+    border-radius: 2rem; /* Rounded corners */
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 0.2rem 0.5rem;
+    width: 100%;
+}
+
+.navbar .search-container input {
+    background: transparent;
+    border: none;
+    color: white;
+    flex-grow: 1;
+    padding: 0.5rem;
+}
+
+.navbar .search-container input:focus {
+    outline: none;
+}
+
+.navbar .search-icon-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-links a {
+    color: white;
+    text-decoration: none;
+    margin-left: 1rem;
+}
+
+.settings-icon {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    transition: transform 0.8s;
+}
+
+.settings-icon:hover {
+    transform: rotate(240deg);
+   
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+    .navbar-search {
+        display: none;
+    }
+
+    .navbar {
+        padding: 1rem 1.25rem;
+    }
+}

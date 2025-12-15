@@ -1,0 +1,61 @@
+.popup {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    margin-top: 7rem; /* Re-adding margin-top */
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    z-index: 1000;
+    opacity: 0; /* Initial hidden state */
+    transform: translateX(20px); /* Start slightly to the right */
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+
+.popup.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.popup.hide {
+    opacity: 0;
+    transform: translateX(20px); /* Move back to the right on hide */
+}
+
+.popup.success {
+    background-color: rgba(29, 185, 84, 0.7); /* Spotify green with transparency */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.popup.error {
+    background-color: rgba(229, 62, 62, 0.7); /* Red with transparency */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.popup.info {
+    background-color: rgba(52, 152, 219, 0.7); /* Blue with transparency */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.close-btn {
+    background: none;
+    background-color: transparent !important;
+    border: none;
+    color: white;
+    font-size: 1rem; /* Reduced font size for better alignment */
+    cursor: pointer;
+    margin: 0;
+    padding: 0.5rem 0;
+    box-shadow: none;
+}
+
+.close-btn:hover {
+    background-color: transparent;
+    box-shadow: 0px 0px;
+}
