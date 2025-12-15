@@ -17,4 +17,4 @@ This server features a simple web downloader for spotify songs. Using spotify AP
 3. You can then run `npm install` in both the `client` and `server` folders, then running `npm run dev` for frontend and `npm index.js` for backend. Once both are running you should be able to use.
 
 ## Docker
-If you want to run it in a docker container edit `docker-compose.yml` to your configuration and run `docker-compose up --build -d` to get it running.
+If you want to run it in a docker container edit `docker-compose.yml` to your configuration and add your keys in `backend/.env` and run `docker-compose up --build -d` to get it running.
