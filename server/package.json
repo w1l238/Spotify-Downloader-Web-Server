@@ -11,10 +11,12 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "18": "^0.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "ytdlp-nodejs": "^2.0.0",
-    "node-id3": "^0.2.6"
+    "music-metadata": "^11.10.3",
+    "node-id3": "^0.2.6",
+    "ytdlp-nodejs": "^2.0.0"
   }
 }
