@@ -10,6 +10,9 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Theme Variable */
+  --app-background: linear-gradient(-45deg, #0350a2, #23a6d5, #23d5ab, #0350a2);
 }
 
 html {
@@ -19,7 +22,7 @@ html {
 body {
   margin: 0;
   height: 100%;
-  background: linear-gradient(-45deg, #0350a2, #23a6d5, #23d5ab, #0350a2);
+  background: var(--app-background);
   background-size: 400% 400%;
   animation: gradient 30s ease infinite;
 }
