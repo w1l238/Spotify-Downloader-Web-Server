@@ -83,7 +83,7 @@ const Results = () => {
                 {results.items.length > 0 ? (
                     results.items.map((track) => (
                         <div key={track.id} className="track-item">
-                            <img src={track.album.images[2]?.url || ''} alt={track.album.name} className="album-art" />
+                            <img src={track.album.images[1]?.url || track.album.images[0]?.url || ''} alt={track.album.name} className="result-album-art" />
                             <div className="track-info">
                                 <span className="track-name">{track.name}</span>
                                 <span className="artist-name">{track.artists.map(artist => artist.name).join(', ')}</span>
