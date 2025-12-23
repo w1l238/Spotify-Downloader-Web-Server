@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch } from 'react-icons/fi';
+import toast, { Toaster } from 'react-hot-toast';
 import './css/Home.css';
 
 const Home = () => {
@@ -23,10 +24,11 @@ const Home = () => {
                 navigate('/results', { state: { results: data.tracks } });
             } else {
                 console.error('Search failed');
-                // Handle search failure, e.g., show a notification
+                toast.error('Search failed. Please check server status.', { id: 'search-error' });
             }
         } catch (error) {
             console.error('Error during search:', error);
+            toast.error('Network error during search. Please check server status.', { id: 'search-error' });
         }
     };
 
@@ -38,7 +40,17 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <div className="search-container">
+            <Toaster position="bottom-right" toastOptions={{
+                style: {
+                    background: 'transparent',
+                    color: 'white',
+                    backdropFilter: 'blur(15px)',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    borderRadius: '1rem',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+                }
+            }} />
+            <div className="search-container fade-in" style={{ animationDelay: '0.1s' }}>
                 <input
                     type="text"
                     placeholder="Search for a song..."
