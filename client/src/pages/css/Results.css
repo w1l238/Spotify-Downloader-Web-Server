@@ -43,10 +43,12 @@
     transform: scaleY(1.03) scaleX(1.005);
 }
 
-.album-art {
-    width: 64px;
-    height: 64px;
+.result-album-art {
+    width: 80px;
+    height: 80px;
     border-radius: 0.5rem;
+    object-fit: cover;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
 }
 
 .track-info {
