@@ -15,6 +15,7 @@
     padding: 0.2rem 0.7rem;
     width: 50%;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    transition: background-color 0.2s;
 }
 
 .search-container input {
@@ -28,6 +29,10 @@
 
 .search-container input:focus {
     outline: none;
+}
+
+.search-container:focus-within {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .search-icon-btn {
