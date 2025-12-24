@@ -36,15 +36,21 @@ const NavBar = () => {
     };
 
     return (
-        <nav className="navbar">
+        <nav className={`navbar ${location.pathname === '/' ? 'home-navbar' : ''}`}>
             <div className="navbar-left">
                 <div className="spotify-logo">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                         <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.503 17.299c-.217.356-.677.469-1.033.252-2.863-1.748-6.466-2.144-10.709-1.177-.406.094-.813-.16-.906-.566-.094-.406.16-.813.566-.906 4.646-1.063 8.638-.61 11.83 1.34.356.216.469.677.252 1.033zm1.467-3.264c-.274.444-.853.585-1.297.311-3.275-2.013-8.267-2.597-12.138-1.422-.5.152-1.03-.131-1.182-.631-.152-.5.131-1.03.631-1.182 4.417-1.34 9.914-.687 13.676 1.627.444.275.586.853.31 1.297zm.126-3.41c-3.928-2.333-10.414-2.55-14.195-1.401-.603.183-1.24-.162-1.423-.765-.183-.603.162-1.24.765-1.423 4.342-1.319 11.503-1.065 16.035 1.623.542.321.717 1.026.396 1.568-.321.542-1.026.717-1.568.396z"/>
                     </svg>
                 </div>
-                <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Search</Link>
-                <Link to="/library" className={`nav-link ${location.pathname === '/library' ? 'active' : ''}`}>Library</Link>
+                <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+                    <FiSearch className="nav-icon" />
+                    <span>Search</span>
+                </Link>
+                <Link to="/library" className={`nav-link ${location.pathname === '/library' ? 'active' : ''}`}>
+                    <FiMusic className="nav-icon" />
+                    <span>Library</span>
+                </Link>
             </div>
             
             <div className="navbar-search">
