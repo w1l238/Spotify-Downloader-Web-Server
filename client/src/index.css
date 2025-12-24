@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -57,7 +61,7 @@ h1 {
 }
 
 button {
-  border-radius: 15px; /* Rounded corners */
+  border-radius: 2rem; /* Rounded corners */
   border: 1px solid rgba(255, 255, 255, 0.2); /* Light border */
   padding: 0.6em 1.2em;
   font-size: 1em;
