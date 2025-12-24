@@ -30,9 +30,12 @@
 .nav-link {
     color: rgba(255, 255, 255, 0.5); /* Gray inactive */
     text-decoration: none;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: bold;
     transition: color 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .nav-link.active {
@@ -103,6 +106,7 @@
     transition: transform 0.8s, color 0.3s;
     transform-origin: center;
     color: rgba(255, 255, 255, 0.5); /* Default gray */
+    text-decoration: none;
 }
 
 .settings-icon.active {
@@ -121,6 +125,59 @@
     }
 
     .navbar {
-        padding: 1rem 1.25rem;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0.8rem 1rem; /* Slightly smaller vertical margin */
+        padding: 0.7rem 0; /* Increased vertical padding for more whitespace */
+        z-index: 800;
+        border-radius: 2rem;
+        min-height: 3.5rem; /* Increased height */
+        justify-content: space-evenly;
+        align-items: center;
+    }
+
+    .navbar-left,
+    .navbar-links {
+        display: contents;
+    }
+
+    .nav-link,
+    .settings-icon {
+        font-size: 1.6rem; /* Slightly smaller icons for better proportions */
+        color: rgba(255, 255, 255, 0.6);
+        padding: 0.3rem; /* Reduced icon padding */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-link.active,
+    .settings-icon.active {
+        color: white;
+    }
+
+    .nav-link span {
+        display: none;
+    }
+
+    .spotify-logo {
+        display: none;
+    }
+
+    /* Merged look for Home page */
+    .navbar.home-navbar {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+        border-top: none; /* Remove border to merge */
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Restore radius when search bar detaches */
+    body.search-focused .navbar.home-navbar {
+        border-top-left-radius: 2rem;
+        border-top-right-radius: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
 }
