@@ -13,9 +13,11 @@ const Library = () => {
     const [errorModal, setErrorModal] = useState({ show: false, message: '' });
     const [editModal, setEditModal] = useState({ show: false, song: null });
     const [scanStatus, setScanStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
+    const [animationsDone, setAnimationsDone] = useState(false);
 
     useEffect(() => {
         document.title = 'Library - Spotify Downloader';
+        document.body.classList.add('library-page');
         
         const shouldAutoScan = localStorage.getItem('auto_scan_library') === 'true';
         if (shouldAutoScan) {
@@ -23,6 +25,12 @@ const Library = () => {
         } else {
             fetchLibrary();
         }
+
+        const timer = setTimeout(() => setAnimationsDone(true), 1500);
+        return () => {
+            clearTimeout(timer);
+            document.body.classList.remove('library-page');
+        };
     }, []);
 
     const fetchLibrary = async () => {
@@ -250,13 +258,13 @@ const Library = () => {
                 }
             }} />
             
-            <div className="library-header fade-in">
+            <div className={`library-header ${!animationsDone ? 'fade-in' : ''}`}>
                 <div className="library-title">
                     {view === 'albums' ? (
                         <h2>My Library</h2>
                     ) : (
                         <button className="back-btn" onClick={handleBack}>
-                            <FiArrowLeft /> Back to Albums
+                            <FiArrowLeft /> <span>Back to Albums</span>
                         </button>
                     )}
                 </div>
@@ -295,9 +303,9 @@ const Library = () => {
                             {filteredContent.map((album, index) => (
                                 <div 
                                     key={album.name} 
-                                    className="album-card fade-in" 
+                                    className={`album-card ${!animationsDone ? 'fade-in' : ''}`} 
                                     onClick={() => handleAlbumClick(album)}
-                                    style={{ animationDelay: `${Math.min(index * 0.03, 0.5)}s` }}
+                                    style={{ animationDelay: !animationsDone ? `${Math.min(index * 0.03, 0.5)}s` : '0s' }}
                                 >
                                     <div className="album-art">
                                         <img 
@@ -319,7 +327,7 @@ const Library = () => {
                     )}
 
                     {view === 'songs' && selectedAlbum && (
-                        <div className="album-detail-view">
+                        <div className="album-detail-view" key={selectedAlbum.name}>
                              <div className="album-view-header fade-in">
                                 <div className="album-view-art">
                                     <img 
