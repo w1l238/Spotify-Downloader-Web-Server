@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { FiSave, FiMonitor, FiDatabase, FiSettings, FiLayout, FiHardDrive } from 'react-icons/fi';
 import './css/Settings.css';
 import Popup from '../components/Popup';
+import CustomDropdown from '../components/CustomDropdown';
 
 const Settings = () => {
     useEffect(() => {
@@ -14,6 +16,8 @@ const Settings = () => {
     const [autoScan, setAutoScan] = useState(false);
     const [background, setBackground] = useState('linear-gradient(-45deg, #0350a2, #23a6d5, #23d5ab, #0350a2)');
     const [popup, setPopup] = useState({ visible: false, message: '', type: '' });
+    const [activeSection, setActiveSection] = useState(null);
+    const [animationsDone, setAnimationsDone] = useState(false);
 
     const backgrounds = [
         { name: 'Blue Green', value: 'linear-gradient(-45deg, #0350a2, #23a6d5, #23d5ab, #0350a2)' },
@@ -48,6 +52,11 @@ const Settings = () => {
                 if (data.downloadPath) setDownloadPath(data.downloadPath);
             })
             .catch(err => console.error('Error fetching config:', err));
+    }, []);
+
+    useEffect(() => {
+        const timer = setTimeout(() => setAnimationsDone(true), 1200);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleSave = async () => {
@@ -92,7 +101,7 @@ const Settings = () => {
     };
 
     return (
-        <div className="settings-container">
+        <div className={`settings-container ${activeSection ? 'has-active-dropdown' : ''}`}>
             {popup.visible && (
                 <Popup 
                     message={popup.message} 
@@ -100,91 +109,121 @@ const Settings = () => {
                     onClose={() => setPopup({ visible: false, message: '', type: '' })} 
                 />
             )}
-            <h1 className="fade-in">Settings</h1>
+            
+            <div className="settings-header fade-in">
+                <h1>Settings</h1>
+                <button className="save-btn-top" onClick={handleSave}>
+                    <FiSave style={{ marginRight: '0.5rem' }} /> Save Changes
+                </button>
+            </div>
 
-            <div className="setting-item fade-in" style={{ animationDelay: '0.1s' }}>
-                <label htmlFor="bg-select">App Background:</label>
-                <select 
-                    id="bg-select" 
-                    value={background} 
-                    onChange={(e) => setBackground(e.target.value)}
-                    style={{ 
-                        background: 'rgba(255,255,255,0.1)', 
-                        color: 'white', 
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '10px',
-                        padding: '0.3rem',
-                        marginTop: '0.5rem',
-                        width: '100%'
-                    }}
+            <div className="settings-grid">
+                {/* Appearance Section */}
+                <div 
+                    className={`settings-section ${!animationsDone ? 'fade-in' : ''} ${activeSection === 'appearance' ? 'z-top' : (activeSection ? 'dimmed' : '')}`} 
+                    style={{ animationDelay: '0.1s' }}
                 >
-                    {backgrounds.map(bg => (
-                        <option key={bg.name} value={bg.value} style={{ background: '#222' }}>{bg.name}</option>
-                    ))}
-                </select>
-            </div>
+                    <div className="section-header">
+                        <FiLayout />
+                        <h2>Appearance</h2>
+                    </div>
+                    <div className="setting-group">
+                        <label htmlFor="bg-select">App Background</label>
+                        <CustomDropdown 
+                            options={backgrounds}
+                            value={background}
+                            onChange={setBackground}
+                            onToggle={(isOpen) => setActiveSection(isOpen ? 'appearance' : null)}
+                        />
+                        <p className="setting-desc">Choose a color theme for the application.</p>
+                    </div>
+                </div>
 
-            <div className="setting-item fade-in" style={{ animationDelay: '0.2s' }}>
-                <label htmlFor="auto-scan">
-                    <input 
-                        type="checkbox" 
-                        id="auto-scan" 
-                        checked={autoScan} 
-                        onChange={(e) => setAutoScan(e.target.checked)} 
-                        style={{ marginRight: '1rem', width: '1.2rem', height: '1.2rem', verticalAlign: 'middle' }}
-                    />
-                    Automatically scan library on open
-                </label>
-            </div>
+                {/* Library & Search Section */}
+                <div className={`settings-section ${!animationsDone ? 'fade-in' : ''} ${activeSection ? 'dimmed' : ''}`} style={{ animationDelay: '0.2s' }}>
+                    <div className="section-header">
+                        <FiDatabase />
+                        <h2>Library & Search</h2>
+                    </div>
+                    <div className="setting-group">
+                        <label className="checkbox-label">
+                            <input 
+                                type="checkbox" 
+                                checked={autoScan} 
+                                onChange={(e) => setAutoScan(e.target.checked)} 
+                            />
+                            <span>Auto-scan library on startup</span>
+                        </label>
+                        <p className="setting-desc">Automatically refresh the library when you open the app.</p>
+                    </div>
+                    <div className="setting-group">
+                        <label htmlFor="results-limit">Search Results Limit</label>
+                        <input
+                            type="number"
+                            id="results-limit"
+                            value={limit}
+                            onChange={(e) => setLimit(e.target.value)}
+                            min="1"
+                            max="50"
+                        />
+                        <p className="setting-desc">Number of songs to show in search results (1-50).</p>
+                    </div>
+                </div>
 
-            <div className="setting-item fade-in" style={{ animationDelay: '0.3s' }}>
-                <label htmlFor="client-id">Spotify Client ID:</label>
-                <input
-                    type="text"
-                    id="client-id"
-                    value={clientId}
-                    onChange={(e) => setClientId(e.target.value)}
-                    placeholder="Spotify Client ID"
-                    style={{ width: '100%', marginTop: '0.5rem' }} 
-                />
-                <label htmlFor="client-secret">Spotify Client Secret:</label>
-                <input
-                    type="password"
-                    id="client-secret"
-                    value={clientSecret}
-                    onChange={(e) => setClientSecret(e.target.value)}
-                    placeholder="Spotify Client Secret"
-                    style={{ width: '100%', marginTop: '0.5rem' }}
-                />
-            </div>
+                {/* Spotify API Section */}
+                <div className={`settings-section ${!animationsDone ? 'fade-in' : ''} ${activeSection ? 'dimmed' : ''}`} style={{ animationDelay: '0.3s' }}>
+                    <div className="section-header">
+                        <FiSettings />
+                        <h2>Spotify API</h2>
+                    </div>
+                    <div className="setting-group">
+                        <label htmlFor="client-id">Client ID</label>
+                        <input
+                            type="text"
+                            id="client-id"
+                            value={clientId}
+                            onChange={(e) => setClientId(e.target.value)}
+                            placeholder="Enter your Spotify Client ID"
+                        />
+                    </div>
+                    <div className="setting-group">
+                        <label htmlFor="client-secret">Client Secret</label>
+                        <input
+                            type="password"
+                            id="client-secret"
+                            value={clientSecret}
+                            onChange={(e) => setClientSecret(e.target.value)}
+                            placeholder="Enter your Spotify Client Secret"
+                        />
+                    </div>
+                    <p className="setting-desc">Required for searching songs on Spotify.</p>
+                </div>
 
-            <div className="setting-item fade-in" style={{ animationDelay: '0.3s' }}>
-                <label htmlFor="download-path">Download Path (Optional):</label>
-                <input
-                    type="text"
-                    id="download-path"
-                    value={downloadPath}
-                    onChange={(e) => setDownloadPath(e.target.value)}
-                    placeholder="e.g. /home/user/Music"
-                    style={{ width: '100%', marginTop: '0.5rem' }}
-                />
-                <p style={{ fontSize: '0.8rem', opacity: 0.6, marginTop: '0.5rem' }}>
-                    Leave empty to use the default 'downloads' folder in project root.
-                </p>
+                {/* Storage Section */}
+                <div className={`settings-section ${!animationsDone ? 'fade-in' : ''} ${activeSection ? 'dimmed' : ''}`} style={{ animationDelay: '0.4s' }}>
+                    <div className="section-header">
+                        <FiHardDrive />
+                        <h2>Storage</h2>
+                    </div>
+                    <div className="setting-group">
+                        <label htmlFor="download-path">Download Location</label>
+                        <input
+                            type="text"
+                            id="download-path"
+                            value={downloadPath}
+                            onChange={(e) => setDownloadPath(e.target.value)}
+                            placeholder="e.g. /home/user/Music"
+                        />
+                        <p className="setting-desc">
+                            Absolute path to save downloads. Leave empty for default.
+                        </p>
+                    </div>
+                </div>
             </div>
-
-            <div className="setting-item fade-in" style={{ animationDelay: '0.4s' }}>
-                <label htmlFor="results-limit">Results per page (1-50):</label>
-                <input
-                    type="number"
-                    id="results-limit"
-                    value={limit}
-                    onChange={(e) => setLimit(e.target.value)}
-                    min="1"
-                    max="50"
-                />
-            </div>
-            <button className="fade-in" style={{ animationDelay: '0.5s' }} onClick={handleSave}>Save</button>
+            
+            <button className="save-btn-bottom mobile-only fade-in" style={{ animationDelay: '0.5s' }} onClick={handleSave}>
+                Save Changes
+            </button>
         </div>
     );
 };
