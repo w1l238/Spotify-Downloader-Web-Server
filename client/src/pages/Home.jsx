@@ -7,6 +7,11 @@ import './css/Home.css';
 const Home = () => {
     useEffect(() => {
         document.title = 'Home - Spotify Downloader';
+        document.body.classList.add('home-page');
+        return () => {
+            document.body.classList.remove('home-page');
+            document.body.classList.remove('search-focused'); // Clean up focus state too
+        };
     }, []);
 
     const [query, setQuery] = useState('');
@@ -50,18 +55,20 @@ const Home = () => {
                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                 }
             }} />
-            <div className="search-container fade-in" style={{ animationDelay: '0.1s' }}>
-                <input
-                    type="text"
-                    placeholder="Search for a song..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                />
-                <button onClick={handleSearch} className="search-icon-btn">
-                    <FiSearch />
-                </button>
-            </div>
+                <div className="search-container" style={{ animationDelay: '0.1s' }}>
+                    <input
+                        type="text"
+                        placeholder="Search for a song..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        onFocus={() => document.body.classList.add('search-focused')}
+                        onBlur={() => document.body.classList.remove('search-focused')}
+                    />
+                    <button onClick={handleSearch} className="search-icon-btn">
+                        <FiSearch />
+                    </button>
+                </div>
         </div>
     );
 };
