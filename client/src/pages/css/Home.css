@@ -57,13 +57,37 @@
 
 /* Media query for smaller screens */
 @media (max-width: 768px) {
-    .search-container {
-        width: 75%; /* Make it wider on smaller screens */
+    body.home-page {
+        overflow: hidden; /* Prevent scrolling on the home page on mobile */
     }
 
     .home-container {
-        align-items: flex-start; /* Align to the top */
-        padding-top: 15vh; /* Add some padding from the top */
-        height: calc(100vh - 6rem - 15vh);
+        display: block;
+        height: auto;
+        padding: 0;
+    }
+
+    .search-container {
+        width: auto; /* Auto width to respect margins */
+        position: fixed;
+        left: 1rem;
+        right: 1rem;
+        bottom: 4.3rem; /* Dock directly on top of navbar: 0.8rem margin + 3.5rem height */
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); /* Animate position and border-radius */
+        z-index: 850; /* Above navbar (800) but below overlays */
+        box-shadow: none; /* No shadow when merged */
+        
+        /* Merged look (Default) */
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-bottom: none; /* Remove border to merge */
+    }
+
+    /* Move up and detach when typing */
+    .search-container:focus-within {
+        bottom: 55%; /* Move to slightly above center */
+        border-radius: 2rem; /* Restore fully rounded corners */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Restore border */
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Restore shadow when detached */
     }
 }
