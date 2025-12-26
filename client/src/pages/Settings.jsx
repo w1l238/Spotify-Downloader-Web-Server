@@ -20,11 +20,16 @@ const Settings = () => {
     const [animationsDone, setAnimationsDone] = useState(false);
 
     const backgrounds = [
-        { name: 'Blue Green', value: 'linear-gradient(-45deg, #0350a2, #23a6d5, #23d5ab, #0350a2)' },
+        { name: 'Spotify Green', value: 'linear-gradient(-45deg, #1db954, #1ed760, #1db954, #191414)' },
         { name: 'Deep Purple', value: 'linear-gradient(-45deg, #2e0249, #570a57, #a91079, #2e0249)' },
-        { name: 'Spotify Green', value: 'linear-gradient(-45deg, #1db954, #191414, #1db954, #121212)' },
-        { name: 'Red Orange', value: 'linear-gradient(-45deg, #800000, #b22222, #ff4500, #800000)' },
-        { name: 'Yellow Orange', value: 'linear-gradient(-45deg, #ff512f, #f09819, #ff512f, #ed1c24)' }
+        { name: 'Midnight Blue', value: 'linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #0f0c29)' },
+        { name: 'Ocean Wave', value: 'linear-gradient(-45deg, #2193b0, #6dd5ed, #2193b0, #6dd5ed)' },
+        { name: 'Forest Green', value: 'linear-gradient(-45deg, #11998e, #38ef7d, #11998e, #38ef7d)' },
+        { name: 'Cosmic Neon', value: 'linear-gradient(-45deg, #833ab4, #fd1d1d, #fcb045, #833ab4)' },
+        { name: 'Lava Flow', value: 'linear-gradient(-45deg, #b22222, #ff0000, #800000, #b22222)' },
+        { name: 'Sunset Vibes', value: 'linear-gradient(-45deg, #ff512f, #dd2476, #ff512f, #dd2476)' },
+        { name: 'Midnight City', value: 'linear-gradient(-45deg, #232526, #414345, #232526, #414345)' },
+        { name: 'Cyberpunk', value: 'linear-gradient(-45deg, #ff00ff, #00ffff, #ff00ff, #00ffff)' },
     ];
 
     useEffect(() => {
