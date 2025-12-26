@@ -5,6 +5,7 @@
     padding: 1rem 2rem;
     background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent white */
     backdrop-filter: blur(10px); /* Glass blur effect */
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2); /* Light border */
     border-radius: 2rem; /* Rounded corners */
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); /* Subtle shadow */
@@ -131,11 +132,13 @@
         right: 0;
         margin: 0.8rem 1rem; /* Slightly smaller vertical margin */
         padding: 0.7rem 0; /* Increased vertical padding for more whitespace */
+        padding-bottom: 0.7rem; /* Align items to bottom for smooth height transition */
         z-index: 800;
         border-radius: 2rem;
         min-height: 3.5rem; /* Increased height */
         justify-content: space-evenly;
-        align-items: center;
+        align-items: flex-end; /* Changed from center to allow smooth upward expansion */
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1); /* Smooth corner rounding and height */
     }
 
     .navbar-left,
@@ -166,18 +169,37 @@
         display: none;
     }
 
-    /* Merged look for Home page */
+    /* Merged look for pages with bottom search bar (Home & Results) */
     .navbar.home-navbar {
-        border-top-left-radius: 0;
-        border-top-right-radius: 0;
-        border-top: none; /* Remove border to merge */
+        /* Expand to create a single glass surface for both nav and search */
+        min-height: 7.5rem; 
+        align-items: flex-end; 
+        padding-bottom: 1.2rem;
+        
+        /* Fully rounded capsule */
+        border-radius: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2); 
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        
         transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    /* Restore radius when search bar detaches */
+    /* Restore standard navbar when search bar detaches */
     body.search-focused .navbar.home-navbar {
-        border-top-left-radius: 2rem;
-        border-top-right-radius: 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        min-height: 3.5rem;
+        padding-bottom: 0.7rem;
+        border-radius: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    /* Merged look when bulk action bar is showing in Library */
+    body.bulk-bar-showing .navbar {
+        min-height: 7.5rem;
+        align-items: flex-end;
+        padding-bottom: 1.2rem;
+        border-radius: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
     }
 }
