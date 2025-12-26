@@ -416,6 +416,24 @@
     transform-origin: top right;
 }
 
+.song-menu-dropdown.open-upwards {
+    top: auto;
+    bottom: 100%;
+    transform-origin: bottom right;
+    animation: slideUpMenu 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpMenu {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px) scale(0.95); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1); 
+    }
+}
+
 .song-menu-dropdown button {
     display: flex;
     align-items: center;
@@ -1004,35 +1022,88 @@
         overflow: hidden; /* Ensures no content spills out */
     }
 
-    /* Stack Album Art above Title in Detail View */
+    /* Redesigned Album Header for Mobile */
     .album-view-header {
+        position: relative;
         flex-direction: column;
-        text-align: center;
-        gap: 1.5rem;
+        justify-content: flex-end;
+        align-items: flex-start;
+        text-align: left;
+        gap: 0;
         padding: 1.5rem;
+        height: 45vh; /* Tall header */
+        margin: 0 0 1.5rem 0; /* Restored margins */
+        border-radius: 2rem; /* Fully rounded capsule */
+        overflow: hidden;
+        
+        /* Liquid Glass Border Effect */
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background-clip: padding-box; /* Prevents background from leaking under border */
+        
+        /* Background Image Logic */
+        background-image: 
+            linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 60%, #000 100%),
+            var(--album-art-url);
+        background-size: cover;
+        background-position: center;
+        
+        box-shadow: 
+            0 10px 30px rgba(0,0,0,0.5),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3); /* Stronger highlight */
+    }
+
+    .album-detail-view {
+        margin-bottom: 2rem;
     }
 
     .album-view-art {
-        width: 180px;
-        height: 180px;
-        margin: 0 auto;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: none; /* Hide standard image */
+    }
+
+    .album-view-details {
+        width: 100%;
+        z-index: 2; /* Above gradient */
     }
 
     .album-view-details h1 {
-        font-size: 2rem;
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin: 0;
+        line-height: 1.1;
+        text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        display: block; /* Ensure visibility */
+    }
+    
+    .album-view-details h2 {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0.3rem 0 0.8rem 0;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.5);
     }
     
     .album-actions {
-        justify-content: center;
-        gap: 2rem; /* More space between text and button */
-        margin-top: 1rem;
+        justify-content: flex-start; /* Left align buttons */
+        gap: 1rem;
+        margin-top: 0;
     }
 
     .album-actions .icon-btn {
-        font-size: 1.6rem; /* Larger for touch */
-        padding: 0.6rem;
+        font-size: 1.4rem;
+        padding: 0.8rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
+
+    /* Floating Like Button position */
+    .album-actions {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    /* Push "X songs" text to grow, or keep buttons fixed? */
+    /* Let's keep simpler row for now */
 
     /* Adjust Song List for Mobile if needed */
     .song-list-header {
