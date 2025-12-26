@@ -107,13 +107,128 @@
     margin-top: 2rem;
 }
 
+.mobile-only-search {
+    display: none;
+}
+
+.download-button .btn-icon {
+    display: none;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 /* Media query for smaller screens */
 @media (max-width: 768px) {
     .results-container {
-        padding: 0 1rem 1rem 1rem; /* Reduced padding for smaller screens */
+        padding: 1rem 1rem 4.5rem 1rem; /* Added bottom padding for search bar */
+        display: block; /* Ensure it's visible (reverting previous hide if any) */
     }
     
-    h1 {
-        margin: 1rem 0;
+    .results-container h1 {
+        /* margin: 1rem 0; */
+        display: none;
+    }
+
+    /* Mobile Search Bar Styling (Mirrors Home.css) */
+    .mobile-only-search {
+        display: flex;
+        align-items: center;
+        padding: 0.2rem 0.7rem;
+        
+        position: fixed;
+        left: 1rem;
+        right: 1rem;
+        bottom: 4.5rem; /* Position inside the top area of the tall navbar */
+        transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        z-index: 850;
+        
+        /* Transparent when docked - Navbar provides background */
+        background-color: transparent;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+        
+        border: none;
+        border-radius: 0;
+    }
+
+    .mobile-only-search input {
+        background: transparent;
+        border: none;
+        color: white;
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 1.2em;
+    }
+
+    .mobile-only-search input:focus {
+        outline: none;
+    }
+
+    .mobile-only-search .search-icon-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        margin: 0;
+    }
+
+    /* Move up and detach when typing */
+    body.search-focused .mobile-only-search {
+        bottom: 55%; 
+        border-radius: 2rem; 
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        
+        /* Restore background */
+        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .track-item {
+        padding: 0.75rem;
+        gap: 0.8rem;
+        border-radius: 2rem;
+    }
+
+    .result-album-art {
+        width: 60px;
+        height: 60px;
+    }
+
+    .track-name {
+        font-size: 1.1em;
+    }
+
+    .download-button {
+        width: 2.8rem;
+        height: 2.8rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 1.2rem;
+    }
+
+    .download-button .btn-text {
+        display: none;
+    }
+
+    .download-button .btn-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 }
