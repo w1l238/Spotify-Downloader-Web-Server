@@ -22,6 +22,7 @@ const Library = () => {
     const [bulkDeleteModal, setBulkDeleteModal] = useState({ show: false, count: 0 });
     const [showBulkBar, setShowBulkBar] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
+    const [menuOpenUpwards, setMenuOpenUpwards] = useState(false);
     const animationTimer = useRef(null);
 
     useEffect(() => {
@@ -547,7 +548,12 @@ const Library = () => {
 
                     {view === 'songs' && activeAlbum && (
                         <div className="album-detail-view" key={activeAlbum.name}>
-                             <div className={`album-view-header ${!animationsDone ? 'fade-in' : ''}`}>
+                             <div 
+                                className={`album-view-header ${!animationsDone ? 'fade-in' : ''}`}
+                                style={{ 
+                                    '--album-art-url': `url(http://localhost:3001/api/files/${encodeURIComponent(activeAlbum.artId)}/art)` 
+                                }}
+                             >
                                 <div className="album-view-art">
                                     <img 
                                         src={`http://localhost:3001/api/files/${encodeURIComponent(activeAlbum.artId)}/art`} 
@@ -641,14 +647,20 @@ const Library = () => {
                                         <div className="action-container" style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end' }}>
                                             <button 
                                                 className="icon-btn more-btn" 
-                                                onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === song.id ? null : song.id); }}
+                                                onClick={(e) => { 
+                                                    e.stopPropagation(); 
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                                    setMenuOpenUpwards(spaceBelow < 200); // 200px threshold
+                                                    setOpenMenuId(openMenuId === song.id ? null : song.id); 
+                                                }}
                                             >
                                                 <FiMoreVertical />
                                             </button>
                                             
                                             {openMenuId === song.id && (
                                                 <>
-                                                    <div className="song-menu-dropdown">
+                                                    <div className={`song-menu-dropdown ${menuOpenUpwards ? 'open-upwards' : ''}`}>
                                                         <button onClick={(e) => { e.stopPropagation(); toggleFavorite(song); setOpenMenuId(null); }}>
                                                             <FiHeart fill={song.isLiked ? 'white' : 'none'} /> <span>{song.isLiked ? 'Unlike' : 'Like'}</span>
                                                         </button>
