@@ -26,7 +26,7 @@ const Home = () => {
             const response = await fetch(`http://localhost:3001/search-spotify?q=${encodeURIComponent(query)}&limit=${limit}`);
             if (response.ok) {
                 const data = await response.json();
-                navigate('/results', { state: { results: data.tracks } });
+                navigate('/results', { state: { results: data.tracks, query } });
             } else {
                 console.error('Search failed');
                 toast.error('Search failed. Please check server status.', { id: 'search-error' });
