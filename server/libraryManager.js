@@ -12,6 +12,51 @@ const getDownloadsDir = () => {
     return process.env.DOWNLOAD_PATH || path.join(__dirname, '..', 'downloads');
 };
 
+const favoritesPath = path.join(__dirname, 'favorites.json');
+let favorites = new Set();
+
+// Load favorites on startup
+(async () => {
+    try {
+        const data = await fs.readFile(favoritesPath, 'utf-8');
+        favorites = new Set(JSON.parse(data));
+    } catch (e) {
+        // favorites file might not exist yet
+    }
+})();
+
+async function saveFavorites() {
+    try {
+        await fs.writeFile(favoritesPath, JSON.stringify([...favorites], null, 2));
+    } catch (e) {
+        console.error('Error saving favorites:', e);
+    }
+}
+
+export async function toggleFavorite(id) {
+    if (favorites.has(id)) {
+        favorites.delete(id);
+    } else {
+        favorites.add(id);
+    }
+    await saveFavorites();
+    return favorites.has(id);
+}
+
+/**
+ * Updates favorite status for multiple IDs.
+ * @param {string[]} ids 
+ * @param {boolean} shouldLike 
+ */
+export async function bulkLike(ids, shouldLike) {
+    ids.forEach(id => {
+        if (shouldLike) favorites.add(id);
+        else favorites.delete(id);
+    });
+    await saveFavorites();
+    return true;
+}
+
 let libraryCache = [];
 let isScanning = false;
 
@@ -43,7 +88,7 @@ async function getFilesRecursively(dir) {
  * Scans the downloads folder and updates the cache.
  */
 export async function refreshLibrary() {
-    if (isScanning) return libraryCache;
+    if (isScanning) return libraryCache.map(song => ({ ...song, isLiked: favorites.has(song.id) }));
     isScanning = true;
     console.log('Starting library scan...');
 
@@ -84,7 +129,7 @@ export async function refreshLibrary() {
     } finally {
         isScanning = false;
     }
-    return libraryCache;
+    return libraryCache.map(song => ({ ...song, isLiked: favorites.has(song.id) }));
 }
 
 /**
@@ -94,7 +139,7 @@ export async function getLibrary() {
     if (libraryCache.length === 0 && !isScanning) {
         await refreshLibrary();
     }
-    return libraryCache;
+    return libraryCache.map(song => ({ ...song, isLiked: favorites.has(song.id) }));
 }
 
 /**
@@ -132,6 +177,23 @@ export async function deleteSong(id) {
         console.error('Error deleting file:', err);
         throw err;
     }
+}
+
+/**
+ * Deletes multiple songs by their IDs.
+ * @param {string[]} ids 
+ */
+export async function bulkDelete(ids) {
+    const results = { success: [], failed: [] };
+    for (const id of ids) {
+        try {
+            await deleteSong(id);
+            results.success.push(id);
+        } catch (err) {
+            results.failed.push({ id, error: err.message });
+        }
+    }
+    return results;
 }
 
 /**
