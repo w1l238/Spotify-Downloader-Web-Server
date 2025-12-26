@@ -23,7 +23,7 @@ const getBaseDownloadPath = () => {
 import { YtDlp } from 'ytdlp-nodejs';
 import NodeID3 from 'node-id3';
 const ytdlp = new YtDlp();
-import { getLibrary, refreshLibrary, deleteSong, getSongArt, updateSongMetadata } from './libraryManager.js';
+import { getLibrary, refreshLibrary, deleteSong, getSongArt, updateSongMetadata, toggleFavorite, bulkLike, bulkDelete } from './libraryManager.js';
 
 const app = express();
 const port = 3001;
@@ -424,6 +424,45 @@ app.put('/api/files/:id/metadata', async (req, res) => {
     } catch (err) {
         error('Error updating metadata:', err);
         res.status(500).json({ error: err.message || 'Failed to update metadata.' });
+    }
+});
+
+app.post('/api/files/:id/toggle-favorite', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const isLiked = await toggleFavorite(id);
+        res.json({ isLiked });
+    } catch (err) {
+        error('Error toggling favorite:', err);
+        res.status(500).json({ error: 'Failed to toggle favorite.' });
+    }
+});
+
+app.post('/api/library/bulk/favorite', async (req, res) => {
+    const { ids, shouldLike } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+        return res.status(400).json({ error: 'ids array is required' });
+    }
+    try {
+        await bulkLike(ids, shouldLike);
+        res.json({ success: true });
+    } catch (err) {
+        error('Error in bulk like:', err);
+        res.status(500).json({ error: 'Failed to update favorites' });
+    }
+});
+
+app.post('/api/library/bulk/delete', async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids)) {
+        return res.status(400).json({ error: 'ids array is required' });
+    }
+    try {
+        const results = await bulkDelete(ids);
+        res.json(results);
+    } catch (err) {
+        error('Error in bulk delete:', err);
+        res.status(500).json({ error: 'Failed to delete songs' });
     }
 });
 
