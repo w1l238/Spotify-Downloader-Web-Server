@@ -255,6 +255,10 @@
 }
 
 @media (max-width: 768px) {
+    .settings-header {
+        display: none;
+    }
+
     .settings-grid {
         grid-template-columns: 1fr;
     }
