@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { FiGrid, FiList, FiTrash2, FiMusic, FiSearch, FiRefreshCw, FiArrowLeft, FiDisc, FiX, FiCheck, FiEdit } from 'react-icons/fi';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { FiGrid, FiList, FiTrash2, FiMusic, FiSearch, FiRefreshCw, FiArrowLeft, FiDisc, FiX, FiCheck, FiEdit, FiHeart, FiMoreVertical } from 'react-icons/fi';
+import { LuHeartOff } from 'react-icons/lu';
 import toast, { Toaster } from 'react-hot-toast';
 import './css/Library.css';
 
@@ -14,6 +15,14 @@ const Library = () => {
     const [editModal, setEditModal] = useState({ show: false, song: null });
     const [scanStatus, setScanStatus] = useState('idle'); // 'idle' | 'loading' | 'success' | 'error'
     const [animationsDone, setAnimationsDone] = useState(false);
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [bulkDeleteModal, setBulkDeleteModal] = useState({ show: false, count: 0 });
+    const [showBulkBar, setShowBulkBar] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const animationTimer = useRef(null);
 
     useEffect(() => {
         document.title = 'Library - Spotify Downloader';
@@ -26,10 +35,11 @@ const Library = () => {
             fetchLibrary();
         }
 
-        const timer = setTimeout(() => setAnimationsDone(true), 1500);
+        animationTimer.current = setTimeout(() => setAnimationsDone(true), 1500);
         return () => {
-            clearTimeout(timer);
+            if (animationTimer.current) clearTimeout(animationTimer.current);
             document.body.classList.remove('library-page');
+            document.body.classList.remove('bulk-bar-showing');
         };
     }, []);
 
@@ -93,6 +103,75 @@ const Library = () => {
             setScanStatus('error');
         } finally {
             setTimeout(() => setScanStatus('idle'), 3000);
+        }
+    };
+
+    const toggleFavorite = async (song) => {
+        try {
+            // Optimistic update
+            const newIsLiked = !song.isLiked;
+            setSongs(songs.map(s => s.id === song.id ? { ...s, isLiked: newIsLiked } : s));
+
+            const response = await fetch(`http://localhost:3001/api/files/${encodeURIComponent(song.id)}/toggle-favorite`, {
+                method: 'POST'
+            });
+            
+            if (!response.ok) {
+                // Revert if failed
+                setSongs(songs.map(s => s.id === song.id ? { ...s, isLiked: !newIsLiked } : s));
+                toast.error('Failed to update favorite');
+            }
+        } catch (error) {
+             setSongs(songs.map(s => s.id === song.id ? { ...s, isLiked: !song.isLiked } : s));
+             console.error('Error toggling favorite:', error);
+        }
+    };
+
+    const handleLikeAlbum = async (albumName) => {
+        const albumSongs = songs.filter(s => s.album === albumName);
+        if (albumSongs.length === 0) return;
+
+        // If ALL songs are liked, we UNLIKE all. Otherwise, we LIKE all.
+        const allLiked = albumSongs.every(s => s.isLiked);
+        const shouldLike = !allLiked;
+        const ids = albumSongs.map(s => s.id);
+
+        try {
+            // Optimistic update
+            setSongs(songs.map(s => {
+                if (s.album === albumName) {
+                    return { ...s, isLiked: shouldLike };
+                }
+                return s;
+            }));
+
+            const response = await fetch('http://localhost:3001/api/library/bulk/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids, shouldLike })
+            });
+
+            if (!response.ok) {
+                // Revert
+                setSongs(songs.map(s => {
+                    if (s.album === albumName) {
+                        return { ...s, isLiked: !shouldLike }; // simple revert logic might need refinement if mixed state but good enough
+                    }
+                    return s;
+                }));
+                toast.error('Failed to update album favorites');
+            } else {
+                 toast.success(shouldLike ? `Liked all songs in "${albumName}"` : `Unliked all songs in "${albumName}"`);
+            }
+        } catch (error) {
+            console.error('Error liking album:', error);
+            // Revert
+            setSongs(songs.map(s => {
+                if (s.album === albumName) {
+                    return { ...s, isLiked: !shouldLike };
+                }
+                return s;
+            }));
         }
     };
 
@@ -216,36 +295,161 @@ const Library = () => {
     // Filter Logic
     const filteredContent = useMemo(() => {
         const query = searchQuery.toLowerCase();
+        
         if (view === 'albums') {
-            return albums.filter(album => 
+            let filteredAlbums = albums;
+            if (showFavoritesOnly) {
+                filteredAlbums = filteredAlbums.filter(album => album.songs.some(s => s.isLiked));
+            }
+            return filteredAlbums.filter(album => 
                 album.name.toLowerCase().includes(query) || 
                 album.artist.toLowerCase().includes(query)
             );
         } else if (view === 'songs' && selectedAlbum) {
-            // Show all songs in album, or filter if user wants (optional). 
-            // For now let's just show all songs of the album, assuming query was for finding the album.
-            // Or we can allow searching within the album:
-            const albumSongs = songs.filter(s => s.album === selectedAlbum.name);
+            let albumSongs = songs.filter(s => s.album === selectedAlbum.name);
+            if (showFavoritesOnly) {
+                albumSongs = albumSongs.filter(s => s.isLiked);
+            }
             if (!query) return albumSongs;
             return albumSongs.filter(s => s.title.toLowerCase().includes(query));
         }
         return [];
-    }, [albums, songs, view, selectedAlbum, searchQuery]);
+    }, [albums, songs, view, selectedAlbum, searchQuery, showFavoritesOnly]);
 
     const handleAlbumClick = (album) => {
+        if (animationTimer.current) clearTimeout(animationTimer.current);
+        setAnimationsDone(false);
         setSelectedAlbum(album);
         setView('songs');
         setSearchQuery(''); // Clear search when entering album
+        setSelectedIds([]);
+        setIsSelectionMode(false);
+        animationTimer.current = setTimeout(() => setAnimationsDone(true), 1500);
     };
 
     const handleBack = () => {
+        if (animationTimer.current) clearTimeout(animationTimer.current);
+        setAnimationsDone(false);
         setView('albums');
         setSelectedAlbum(null);
         setSearchQuery('');
+        setSelectedIds([]);
+        setIsSelectionMode(false);
+        animationTimer.current = setTimeout(() => setAnimationsDone(true), 1500);
+    };
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        const currentIds = filteredContent.map(s => s.id);
+        const allSelected = currentIds.every(id => selectedIds.includes(id));
+        
+        if (allSelected) {
+            setSelectedIds(selectedIds.filter(id => !currentIds.includes(id)));
+        } else {
+            setSelectedIds([...new Set([...selectedIds, ...currentIds])]);
+        }
+    };
+
+    const handleBulkLike = async (shouldLike) => {
+        if (selectedIds.length === 0) return;
+        
+        try {
+            // Optimistic update
+            setSongs(songs.map(s => selectedIds.includes(s.id) ? { ...s, isLiked: shouldLike } : s));
+
+            const response = await fetch('http://localhost:3001/api/library/bulk/favorite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds, shouldLike })
+            });
+
+            if (!response.ok) {
+                fetchLibrary(); // Revert via refresh
+                toast.error('Failed to update favorites');
+            } else {
+                toast.success(`${shouldLike ? 'Liked' : 'Unliked'} ${selectedIds.length} songs`);
+            }
+        } catch (error) {
+            fetchLibrary();
+            console.error('Error in bulk like:', error);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+
+        try {
+            const response = await fetch('http://localhost:3001/api/library/bulk/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+
+            if (response.ok) {
+                const results = await response.json();
+                const successIds = results.success;
+                setSongs(songs.filter(s => !successIds.includes(s.id)));
+                setSelectedIds([]);
+                setBulkDeleteModal({ show: false, count: 0 });
+                toast.success(`Deleted ${successIds.length} songs`);
+                
+                if (results.failed.length > 0) {
+                    toast.error(`Failed to delete ${results.failed.length} songs`);
+                }
+
+                // If in album view and album is now empty, go back
+                if (activeAlbum) {
+                    const remainingInAlbum = songs.filter(s => !successIds.includes(s.id) && s.album === activeAlbum.name);
+                    if (remainingInAlbum.length === 0) {
+                        handleBack();
+                    }
+                }
+            } else {
+                toast.error('Failed to delete songs');
+            }
+        } catch (error) {
+            console.error('Error in bulk delete:', error);
+            toast.error('Network error during bulk delete');
+        }
+    };
+
+    const activeAlbum = useMemo(() => {
+        if (!selectedAlbum) return null;
+        return albums.find(a => a.name === selectedAlbum.name) || selectedAlbum;
+    }, [albums, selectedAlbum]);
+
+    useEffect(() => {
+        if (selectedIds.length > 0) {
+            setShowBulkBar(true);
+            setIsClosing(false);
+            document.body.classList.add('bulk-bar-showing');
+        } else if (showBulkBar) {
+            setIsClosing(true);
+            document.body.classList.remove('bulk-bar-showing');
+            const timer = setTimeout(() => {
+                setShowBulkBar(false);
+                setIsClosing(false);
+            }, 300); // Snappier animation duration
+            return () => clearTimeout(timer);
+        }
+    }, [selectedIds.length, showBulkBar]);
+
+    const handleContainerClick = () => {
+        if (openMenuId) {
+            setOpenMenuId(null);
+        }
     };
 
     return (
-        <div className="library-container">
+        <div 
+            className={`library-container ${openMenuId ? 'has-active-menu' : ''} ${isSelectionMode ? 'selection-mode' : ''}`} 
+            onClick={handleContainerClick}
+        >
             <Toaster position="bottom-right" toastOptions={{
                 className: '',
                 style: {
@@ -258,15 +462,16 @@ const Library = () => {
                 }
             }} />
             
-            <div className={`library-header ${!animationsDone ? 'fade-in' : ''}`}>
+            <div className="library-header">
                 <div className="library-title">
-                    {view === 'albums' ? (
+                    <div className={`title-content ${view === 'albums' ? 'active' : 'inactive'}`}>
                         <h2>My Library</h2>
-                    ) : (
+                    </div>
+                    <div className={`title-content ${view !== 'albums' ? 'active' : 'inactive'}`}>
                         <button className="back-btn" onClick={handleBack}>
                             <FiArrowLeft /> <span>Back to Albums</span>
                         </button>
-                    )}
+                    </div>
                 </div>
 
                 <div className="library-controls">
@@ -278,6 +483,16 @@ const Library = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                    </div>
+
+                    <div className={`favorites-wrapper ${view === 'albums' ? '' : 'hidden'}`}>
+                        <button 
+                            className={`icon-btn ${showFavoritesOnly ? 'active' : ''}`} 
+                            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} 
+                            title={showFavoritesOnly ? "Show All" : "Show Favorites Only"}
+                        >
+                            <FiHeart fill={showFavoritesOnly ? 'white' : 'none'} />
+                        </button>
                     </div>
 
                     <button 
@@ -302,50 +517,99 @@ const Library = () => {
                         <div className="album-grid">
                             {filteredContent.map((album, index) => (
                                 <div 
-                                    key={album.name} 
-                                    className={`album-card ${!animationsDone ? 'fade-in' : ''}`} 
-                                    onClick={() => handleAlbumClick(album)}
+                                    key={album.name}
+                                    className={`album-card-wrapper ${!animationsDone ? 'fade-in' : ''}`}
                                     style={{ animationDelay: !animationsDone ? `${Math.min(index * 0.03, 0.5)}s` : '0s' }}
                                 >
-                                    <div className="album-art">
-                                        <img 
-                                            src={`http://localhost:3001/api/files/${encodeURIComponent(album.artId)}/art`} 
-                                            alt={album.name}
-                                            onError={(e) => { e.target.onerror = null; e.target.src = 'data:image/svg+xml;base64,...'; /* Fallback handled by CSS gradient mostly */ e.target.style.display = 'none'; }}
-                                            onLoad={(e) => e.target.style.display = 'block'}
-                                        />
-                                        <FiDisc style={{ display: 'none', fontSize: '3rem', opacity: 0.5 }} /> 
-                                    </div>
-                                    <div className="album-info">
-                                        <h3 title={album.name}>{album.name}</h3>
-                                        <p>{album.artist}</p>
-                                        <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{album.songs.length} songs</p>
+                                    <div 
+                                        className="album-card" 
+                                        onClick={() => handleAlbumClick(album)}
+                                    >
+                                        <div className="album-art">
+                                            <img 
+                                                src={`http://localhost:3001/api/files/${encodeURIComponent(album.artId)}/art`} 
+                                                alt={album.name}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = 'data:image/svg+xml;base64,...'; /* Fallback handled by CSS gradient mostly */ e.target.style.display = 'none'; }}
+                                                onLoad={(e) => e.target.style.display = 'block'}
+                                            />
+                                            <FiDisc style={{ display: 'none', fontSize: '3rem', opacity: 0.5 }} /> 
+                                        </div>
+                                        <div className="album-info">
+                                            <h3 title={album.name}>{album.name}</h3>
+                                            <p>{album.artist}</p>
+                                            <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{album.songs.length} songs</p>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {view === 'songs' && selectedAlbum && (
-                        <div className="album-detail-view" key={selectedAlbum.name}>
-                             <div className="album-view-header fade-in">
+                    {view === 'songs' && activeAlbum && (
+                        <div className="album-detail-view" key={activeAlbum.name}>
+                             <div className={`album-view-header ${!animationsDone ? 'fade-in' : ''}`}>
                                 <div className="album-view-art">
                                     <img 
-                                        src={`http://localhost:3001/api/files/${encodeURIComponent(selectedAlbum.artId)}/art`} 
-                                        alt={selectedAlbum.name}
+                                        src={`http://localhost:3001/api/files/${encodeURIComponent(activeAlbum.artId)}/art`} 
+                                        alt={activeAlbum.name}
                                         onError={(e) => { e.target.style.display = 'none'; }}
                                     />
                                 </div>
                                 <div className="album-view-details">
-                                    <h1>{selectedAlbum.name}</h1>
-                                    <h2>{selectedAlbum.artist}</h2>
-                                    <p>{selectedAlbum.songs.length} songs</p>
+                                    <h1>{activeAlbum.name}</h1>
+                                    <h2>{activeAlbum.artist}</h2>
+                                    <div className="album-actions">
+                                        <p>{activeAlbum.songs.length} songs</p>
+                                        <button 
+                                            className="icon-btn" 
+                                            style={{ 
+                                                borderRadius: '50%', 
+                                                background: 'rgba(255,255,255,0.1)',
+                                                border: '1px solid rgba(255,255,255,0.1)'
+                                            }}
+                                            onClick={() => handleLikeAlbum(activeAlbum.name)}
+                                            title="Like/Unlike Album"
+                                        >
+                                            <FiHeart 
+                                                fill={activeAlbum.songs.every(s => s.isLiked) ? 'white' : 'none'} 
+                                                style={{ display: 'block' }}
+                                            />
+                                        </button>
+                                        <button 
+                                            className="icon-btn" 
+                                            style={{ 
+                                                borderRadius: '50%', 
+                                                background: isSelectionMode ? 'rgba(29, 185, 84, 0.7)' : 'rgba(255,255,255,0.1)',
+                                                border: isSelectionMode ? '1px solid #1db954' : '1px solid rgba(255,255,255,0.1)'
+                                            }}
+                                            onClick={() => {
+                                                if (isSelectionMode) {
+                                                    setIsSelectionMode(false);
+                                                    setSelectedIds([]);
+                                                } else {
+                                                    setIsSelectionMode(true);
+                                                }
+                                            }}
+                                            title="Toggle Selection Mode"
+                                        >
+                                            <FiEdit style={{ display: 'block' }} />
+                                        </button>
+                                    </div>
                                 </div>
                              </div>
 
                              <div className="song-list">
-                                <div className="song-list-header fade-in" style={{ animationDelay: '0.1s' }}>
-                                    <div>#</div>
+                                <div className={`song-list-header ${!animationsDone ? 'fade-in' : ''}`} style={{ animationDelay: '0.1s' }}>
+                                    <div>
+                                        {isSelectionMode ? (
+                                            <input 
+                                                type="checkbox" 
+                                                className="library-checkbox"
+                                                checked={filteredContent.length > 0 && filteredContent.every(s => selectedIds.includes(s.id))}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        ) : '#'}
+                                    </div>
                                     <div>Title</div>
                                     <div>Duration</div>
                                     <div></div>
@@ -353,19 +617,50 @@ const Library = () => {
                                 {filteredContent.map((song, index) => (
                                     <div 
                                         key={song.id} 
-                                        className="song-row fade-in"
-                                        style={{ animationDelay: `${0.2 + Math.min(index * 0.03, 0.5)}s` }}
+                                        className={`song-row ${!animationsDone ? 'fade-in' : ''} ${openMenuId === song.id ? 'is-active-row' : ''} ${selectedIds.includes(song.id) ? 'selected' : ''}`}
+                                        style={{ 
+                                            animationDelay: `${0.2 + Math.min(index * 0.03, 0.5)}s`
+                                        }}
+                                        onClick={() => isSelectionMode && toggleSelect(song.id)}
                                     >
-                                        <div style={{ opacity: 0.5 }}>{index + 1}</div>
+                                        <div>
+                                            {isSelectionMode ? (
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="library-checkbox"
+                                                    checked={selectedIds.includes(song.id)}
+                                                    onChange={() => toggleSelect(song.id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                />
+                                            ) : (
+                                                <span style={{ opacity: 0.5 }}>{index + 1}</span>
+                                            )}
+                                        </div>
                                         <div style={{ fontWeight: 'bold' }}>{song.title}</div>
                                         <div style={{ fontFamily: 'monospace', opacity: 0.7 }}>{formatDuration(song.duration)}</div>
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <button className="edit-btn" onClick={() => handleEditClick(song)} title="Edit Metadata">
-                                                <FiEdit />
+                                        <div className="action-container" style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end' }}>
+                                            <button 
+                                                className="icon-btn more-btn" 
+                                                onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === song.id ? null : song.id); }}
+                                            >
+                                                <FiMoreVertical />
                                             </button>
-                                            <button className="delete-btn" onClick={() => handleDeleteClick(song)} title="Delete Song">
-                                                <FiTrash2 />
-                                            </button>
+                                            
+                                            {openMenuId === song.id && (
+                                                <>
+                                                    <div className="song-menu-dropdown">
+                                                        <button onClick={(e) => { e.stopPropagation(); toggleFavorite(song); setOpenMenuId(null); }}>
+                                                            <FiHeart fill={song.isLiked ? 'white' : 'none'} /> <span>{song.isLiked ? 'Unlike' : 'Like'}</span>
+                                                        </button>
+                                                        <button onClick={(e) => { e.stopPropagation(); handleEditClick(song); setOpenMenuId(null); }}>
+                                                            <FiEdit /> <span>Edit</span>
+                                                        </button>
+                                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(song); setOpenMenuId(null); }} className="delete-option">
+                                                            <FiTrash2 /> <span>Delete</span>
+                                                        </button>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -447,6 +742,44 @@ const Library = () => {
                         </button>
                         <h3 style={{ color: '#ff5050' }}>Error</h3>
                         <p>{errorModal.message}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Delete Modal */}
+            {bulkDeleteModal.show && (
+                <div className="modal-overlay" onClick={() => setBulkDeleteModal({ show: false, count: 0 })}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3>Delete {bulkDeleteModal.count} Songs?</h3>
+                        <p>Are you sure you want to delete these songs from your library?</p>
+                        <p style={{fontSize: '0.8rem', color: '#aaa', marginBottom: '2rem'}}>This action cannot be undone.</p>
+                        <div className="modal-actions">
+                            <button className="modal-btn cancel" onClick={() => setBulkDeleteModal({ show: false, count: 0 })}>Cancel</button>
+                            <button className="modal-btn delete" onClick={handleBulkDelete}>Delete All</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Bulk Action Bar */}
+            {showBulkBar && (
+                <div className="bulk-action-bar-container">
+                    <div className={`bulk-action-bar ${isClosing ? 'is-closing' : ''}`}>
+                        <div className="bulk-info">
+                            <span className="count">{selectedIds.length} Selected</span>
+                            <span>Selected</span>
+                        </div>
+                        <div className="bulk-actions-buttons">
+                            <button className="bulk-btn like" onClick={() => handleBulkLike(true)} title="Like Selected">
+                                <FiHeart fill="currentColor" /> <span className="hide-mobile">Like</span>
+                            </button>
+                            <button className="bulk-btn unlike" onClick={() => handleBulkLike(false)} title="Unlike Selected">
+                                <LuHeartOff /> <span className="hide-mobile">Unlike</span>
+                            </button>
+                            <button className="bulk-btn delete" onClick={() => setBulkDeleteModal({ show: true, count: selectedIds.length })} title="Delete Selected">
+                                <FiTrash2 /> <span className="hide-mobile">Delete</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
