@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiSearch, FiSettings, FiMusic } from 'react-icons/fi';
 import toast from 'react-hot-toast';
@@ -9,6 +9,12 @@ const NavBar = () => {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
 
+    useEffect(() => {
+        if (location.pathname === '/results' && location.state?.query) {
+            setQuery(location.state.query);
+        }
+    }, [location]);
+
     const handleSearch = async () => {
         if (!query.trim()) return;
 
@@ -18,8 +24,8 @@ const NavBar = () => {
             const response = await fetch(`http://localhost:3001/search-spotify?q=${encodeURIComponent(query)}&limit=${limit}`);
             if (response.ok) {
                 const data = await response.json();
-                navigate('/results', { state: { results: data.tracks } });
-                setQuery('');
+                navigate('/results', { state: { results: data.tracks, query } });
+                document.activeElement.blur();
             } else {
                 console.error('Search failed');
                 toast.error('Search failed. Please check server status.', { id: 'search-error' });
@@ -36,7 +42,7 @@ const NavBar = () => {
     };
 
     return (
-        <nav className={`navbar ${location.pathname === '/' ? 'home-navbar' : ''}`}>
+        <nav className={`navbar ${(location.pathname === '/' || location.pathname === '/results') ? 'home-navbar' : ''}`}>
             <div className="navbar-left">
                 <div className="spotify-logo">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
