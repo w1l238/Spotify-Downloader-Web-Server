@@ -49,10 +49,28 @@
     transition: transform 0.5s;
 }
 
+.home-search-icon {
+    display: inline-block;
+}
+
 .search-icon-btn:hover {
     background-color: transparent;
     transform: scale(1.25);
     box-shadow: 0 0px 0px rgba(0, 0, 0, 0.2);
+}
+
+.search-icon-btn:hover .search-lens {
+    animation: spin-tilted 0.8s ease-in-out;
+    transform-origin: 11px 11px;
+}
+
+.mobile-focal-icon {
+    display: none;
+}
+
+@keyframes spin-tilted {
+    from { transform: rotate3d(1, 1, 0, 0deg); }
+    to { transform: rotate3d(1, 1, 0, 360deg); }
 }
 
 /* Media query for smaller screens */
@@ -84,6 +102,66 @@
         
         border: none;
         border-radius: 0;
+    }
+
+    .mobile-focal-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: fixed;
+        top: 40%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 190px;
+        height: 190px;
+        z-index: 10;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+        overflow: hidden;
+    }
+
+    .glass-svg {
+        width: 85%;
+        height: 85%;
+        position: relative;
+        z-index: 2;
+    }
+
+    .glass-circle {
+        fill: rgba(255, 255, 255, 0.05);
+        stroke: rgba(255, 255, 255, 0.2);
+        stroke-width: 1;
+    } 
+
+    .glass-paths {
+        stroke: rgba(255, 255, 255, 0.95);
+        stroke-width: 5.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+    }
+
+    @keyframes liquid-shine {
+        0%, 100% { 
+            border-color: rgba(255, 255, 255, 0.45);
+        }
+        50% { 
+            border-color: rgba(255, 255, 255, 0.65);
+        }
+    }
+
+    body.search-focused .mobile-focal-icon {
+        opacity: 0;
+        transform: translate(-50%, -60%) scale(0.8);
+        pointer-events: none;
+    }
+
+    @keyframes float-pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -55%) scale(1.05); }
     }
 
     /* Move up and detach when typing */
