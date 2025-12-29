@@ -36,12 +36,12 @@ let tokenExpiryTime = 0;
 
 // Function to get Spotify Access Token
 async function getSpotifyAccessToken() {
-  info('Attempting to get Spotify Access Token...');
+  info('Requesting Spotify access token from accounts.spotify.com...');
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    error('Spotify Client ID or Client Secret not set in environment variables.');
+    error('SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET is missing in .env');
     return null;
   }
 
@@ -60,24 +60,36 @@ async function getSpotifyAccessToken() {
     const data = await response.json();
     if (response.ok) {
       spotifyAccessToken = data.access_token;
-      tokenExpiryTime = Date.now() + (data.expires_in * 1000) - 60000; // Store expiry time, refresh 1 minute before actual expiry
-      info('Spotify Access Token obtained.');
+      tokenExpiryTime = Date.now() + (data.expires_in * 1000) - 60000;
+      info(`Successfully obtained Spotify token. Valid for ${data.expires_in}s.`);
       return spotifyAccessToken;
     } else {
-      error('Error getting Spotify access token:', data);
+      error(`Spotify token request failed (${response.status}): ${JSON.stringify(data)}`);
       return null;
     }
-  } catch (error) {
-    error('Network error while getting Spotify access token:', error);
+  } catch (err) {
+    error(`Network error while fetching Spotify token: ${err.message}`);
     return null;
   }
 }
 
-// Middleware to ensure we have a valid access token
+// Middleware to log requests and ensure we have a valid access token
 app.use(async (req, res, next) => {
-  info('Middleware: Checking Spotify Access Token...');
+  const { method, url } = req;
+  const start = Date.now();
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    let logMsg = `${method} ${url} ${res.statusCode} - ${duration}ms`;
+    if (res.statusCode === 304) {
+      logMsg += ' (Not Modified - Client Cache Hit)';
+    }
+    info(logMsg);
+  });
+
   if (!spotifyAccessToken || Date.now() >= tokenExpiryTime) {
-    info('Refreshing Spotify Access Token...');
+    const reason = !spotifyAccessToken ? 'initially missing' : 'expired';
+    info(`Spotify access token ${reason}. Refreshing...`);
     await getSpotifyAccessToken();
   }
   next();
@@ -90,9 +102,9 @@ app.get('/', (req, res) => {
 
 // Endpoint to search Spotify
 app.get('/search-spotify', async (req, res) => {
-  info(`Received search-spotify request for query: "${req.query.q}"`);
   const query = req.query.q;
   const limit = req.query.limit || 10;
+  info(`Spotify Search: "${query}" (limit: ${limit})`);
   if (!query) {
     return res.status(400).json({ error: 'Query parameter "q" is required.' });
   }
@@ -121,6 +133,11 @@ app.get('/search-spotify', async (req, res) => {
   }
 });
 
+// Helper to sanitize filenames
+const sanitizeFilename = (name) => {
+  return name.replace(/[/\\]/g, '_'); // Replace forward and backward slashes with underscore
+};
+
 // Endpoint to create folder structure
 app.post('/create-folder-structure', async (req, res) => {
   info(`Received request to create folder structure for artist: "${req.body.artistName}", album: "${req.body.albumName}"`);
@@ -131,12 +148,14 @@ app.post('/create-folder-structure', async (req, res) => {
   }
 
   const baseDownloadPath = getBaseDownloadPath();
+  const safeArtistName = sanitizeFilename(artistName);
+  const safeAlbumName = sanitizeFilename(albumName);
 
   try {
     await fs.mkdir(baseDownloadPath, { recursive: true });
-    const artistPath = path.join(baseDownloadPath, artistName);
+    const artistPath = path.join(baseDownloadPath, safeArtistName);
     await fs.mkdir(artistPath, { recursive: true });
-    const albumPath = path.join(artistPath, albumName);
+    const albumPath = path.join(artistPath, safeAlbumName);
     await fs.mkdir(albumPath, { recursive: true });
 
     res.json({ message: 'Folder structure created successfully', path: albumPath });
@@ -147,8 +166,8 @@ app.post('/create-folder-structure', async (req, res) => {
 });
 
 app.get('/spotify-proxy', async (req, res) => {
-  info(`Received spotify-proxy request for URL: "${req.query.url}"`);
   const { url } = req.query;
+  info(`Spotify Proxy request to: ${url}`);
 
   if (!url) {
     return res.status(400).json({ error: 'URL parameter is required.' });
@@ -179,8 +198,8 @@ app.get('/spotify-proxy', async (req, res) => {
 });
 
 app.post('/download-song', async (req, res) => {
-  info(`Received download-song request for track: "${req.body.trackName}" by "${req.body.artistName}"`);
   const { trackName, artistName, albumName, albumArtUrl } = req.body;
+  info(`Download Task: "${trackName}" by "${artistName}" from album "${albumName}"`);
 
   if (!trackName || !artistName || !albumName) {
     return res.status(400).json({ error: 'Track name, artist name, and album name are required.' });
@@ -188,19 +207,24 @@ app.post('/download-song', async (req, res) => {
 
   const searchQuery = `${trackName} ${artistName}`;
   const baseDownloadPath = getBaseDownloadPath();
-  const targetFolderPath = path.join(baseDownloadPath, artistName, albumName);
-  const outputFilePath = path.join(targetFolderPath, `${trackName}.mp3`);
+
+  const safeArtistName = sanitizeFilename(artistName);
+  const safeAlbumName = sanitizeFilename(albumName);
+  const safeTrackName = sanitizeFilename(trackName);
+
+  const targetFolderPath = path.join(baseDownloadPath, safeArtistName, safeAlbumName);
+  const outputFilePath = path.join(targetFolderPath, `${safeTrackName}.mp3`);
 
   // Check if the file already exists
   try {
     await fs.access(outputFilePath);
-    info('Song already exists:', outputFilePath);
+    info(`Song exists, skipping download: ${outputFilePath}`);
     return res.status(200).json({ status: 'exists', message: 'Song already downloaded' });
   } catch (error) {
     // File does not exist, proceed with download
   }
 
-  info(`Initiating YouTube search for: "${searchQuery}"`);
+  info(`Searching YouTube: "${searchQuery}"`);
   const searchProcess = ytdlp.exec([`ytsearch1:"${searchQuery}"`, '--dump-json']);
   let searchResultJson = '';
   searchProcess.stdout.on('data', (data) => {
@@ -209,12 +233,11 @@ app.post('/download-song', async (req, res) => {
 
   searchProcess.on('close', async () => {
     if (!searchResultJson) {
-      error('yt-dlp did not return any data for query:', searchQuery);
+      error(`No YouTube results for: "${searchQuery}"`);
       return res.status(404).json({ error: 'Could not find a YouTube video for the song.' });
     }
 
     try {
-      info(`Attempting to create target folder: "${targetFolderPath}"`);
       await fs.mkdir(targetFolderPath, { recursive: true });
       const videoInfo = JSON.parse(searchResultJson);
 
@@ -223,7 +246,7 @@ app.post('/download-song', async (req, res) => {
       }
 
       const videoUrl = videoInfo.webpage_url;
-      info(`Starting audio download from YouTube: "${videoUrl}" to "${outputFilePath}"`);
+      info(`Downloading from YouTube: ${videoUrl}`);
 
       // Download audio and convert to MP3 using ytdlp.exec
       await new Promise((resolve, reject) => {
@@ -237,7 +260,7 @@ app.post('/download-song', async (req, res) => {
         downloadProcess.on('error', reject);
       });
 
-      info('Download complete. Starting metadata injection.');
+      info('Injecting metadata...');
 
       // Inject metadata
       const tags = {
@@ -247,11 +270,9 @@ app.post('/download-song', async (req, res) => {
       };
 
       if (albumArtUrl) {
-        info('Fetching album art from:', albumArtUrl);
         try {
           const imageResponse = await fetch(albumArtUrl);
           const imageBuffer = await imageResponse.arrayBuffer();
-          info('Album art fetched and converted to buffer.');
           tags.image = {
             mime: 'image/jpeg', // Assuming JPEG, but could be dynamic
             type: {
@@ -261,24 +282,24 @@ app.post('/download-song', async (req, res) => {
             description: 'Album Art',
             imageBuffer: Buffer.from(imageBuffer)
           };
+          // info('Album art attached.');
         } catch (imageError) {
-          error('Error fetching album art:', imageError);
+          error(`Failed to fetch album art: ${imageError.message}`);
         }
       }
 
       try {
-        info('Attempting to write ID3 tags to MP3 file.');
         await NodeID3.Promise.write(tags, outputFilePath);
-        info('Metadata written successfully.');
+        info('ID3 tags written successfully.');
       } catch (id3Error) {
-        error('Error writing ID3 tags:', id3Error);
+        error(`Failed to write ID3 tags: ${id3Error.message}`);
       }
 
 
-      info(`Downloaded and converted: ${outputFilePath}`);
+      info(`Completed download: ${outputFilePath}`);
       res.json({ message: 'Song downloaded and converted successfully', filePath: outputFilePath });
     } catch (error) {
-      error('Error in download-song endpoint:', error);
+      error(`Download failure for "${trackName}": ${error.message}`);
       res.status(500).json({ error: 'An error occurred during song download.' });
     }
   });
@@ -390,7 +411,9 @@ app.get('/api/library', async (req, res) => {
 
 app.get('/api/library/scan', async (req, res) => {
   try {
+    info('Scanning local library for changes...');
     const library = await refreshLibrary();
+    info(`Scan complete. Found ${library.length} songs.`);
     res.json(library);
   } catch (err) {
     error('Error scanning library:', err);
@@ -418,8 +441,10 @@ app.put('/api/files/:id/metadata', async (req, res) => {
     const { id } = req.params;
     const { title, artist, album, trackNumber, year } = req.body;
     try {
+        info(`Updating metadata for song ID: ${id}`);
         const tags = { title, artist, album, trackNumber, year };
         await updateSongMetadata(id, tags);
+        info(`Metadata updated for: "${title}" by "${artist}"`);
         res.json({ message: 'Metadata updated successfully.' });
     } catch (err) {
         error('Error updating metadata:', err);
@@ -444,6 +469,7 @@ app.post('/api/library/bulk/favorite', async (req, res) => {
         return res.status(400).json({ error: 'ids array is required' });
     }
     try {
+        info(`Bulk Favorite: ${shouldLike ? 'Liking' : 'Unliking'} ${ids.length} songs.`);
         await bulkLike(ids, shouldLike);
         res.json({ success: true });
     } catch (err) {
@@ -458,7 +484,9 @@ app.post('/api/library/bulk/delete', async (req, res) => {
         return res.status(400).json({ error: 'ids array is required' });
     }
     try {
+        info(`Bulk Delete: Processing ${ids.length} songs.`);
         const results = await bulkDelete(ids);
+        info(`Bulk Delete complete. Success: ${results.success.length}, Failed: ${results.failed.length}`);
         res.json(results);
     } catch (err) {
         error('Error in bulk delete:', err);
@@ -469,7 +497,9 @@ app.post('/api/library/bulk/delete', async (req, res) => {
 app.delete('/api/files/:id', async (req, res) => {
   const { id } = req.params;
   try {
+    info(`Deleting song with ID: ${id}`);
     await deleteSong(id);
+    info('Song deleted successfully.');
     res.json({ message: 'Song deleted successfully.' });
   } catch (err) {
     error('Error deleting song:', err);
