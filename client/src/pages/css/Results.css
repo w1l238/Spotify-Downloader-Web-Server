@@ -1,5 +1,9 @@
 .results-container {
-    padding: 2rem;
+    padding: 1rem 2rem;
+}
+
+.results-container h1 {
+    margin: 0 0 1rem 0;
 }
 
 .results-list {
@@ -94,10 +98,24 @@
     margin: 0;
     flex-shrink: 0; /* Prevent the button from shrinking */
     white-space: nowrap; /* Prevent text from wrapping */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .download-button:hover {
     background-color: rgba(44, 200, 99, 0.8); /* Slightly more opaque on hover */
+}
+
+.download-button.downloaded {
+    background-color: rgba(255, 255, 255, 0.2); /* Grayed out/transparent */
+    color: rgba(255, 255, 255, 0.6);
+    cursor: default;
+    border-color: transparent;
+}
+
+.download-button.downloaded:hover {
+    background-color: rgba(255, 255, 255, 0.2);
 }
 
 .pagination-controls {
@@ -112,7 +130,8 @@
 }
 
 .download-button .btn-icon {
-    display: none;
+    display: flex;
+    align-items: center;
 }
 
 .spin {
