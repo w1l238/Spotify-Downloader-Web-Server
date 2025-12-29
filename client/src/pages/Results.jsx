@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiDownload, FiRefreshCw, FiSearch } from 'react-icons/fi';
+import { FiDownload, FiRefreshCw, FiSearch, FiCheck } from 'react-icons/fi';
 import Popup from '../components/Popup';
 import './css/Results.css';
 
@@ -19,11 +19,35 @@ const Results = () => {
     const [downloading, setDownloading] = useState({});
     const [popup, setPopup] = useState({ visible: false, message: '', type: '' });
     const [query, setQuery] = useState(location.state?.query || '');
+    const [library, setLibrary] = useState([]);
 
     useEffect(() => {
         setResults(location.state?.results || { items: [], next: null, previous: null });
         if (location.state?.query) setQuery(location.state.query);
     }, [location.state]);
+
+    useEffect(() => {
+        fetchLibrary();
+    }, []);
+
+    const fetchLibrary = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/library');
+            if (response.ok) {
+                const data = await response.json();
+                setLibrary(data);
+            }
+        } catch (error) {
+            console.error('Error fetching library:', error);
+        }
+    };
+
+    const isTrackDownloaded = (track) => {
+        return library.some(song => 
+            song.title.toLowerCase() === track.name.toLowerCase() &&
+            track.artists.some(artist => song.artist.toLowerCase().includes(artist.name.toLowerCase()))
+        );
+    };
 
     const handleSearch = async () => {
         if (!query.trim()) return;
@@ -77,8 +101,10 @@ const Results = () => {
             if (response.ok) {
                 if (data.status === 'exists') {
                     setPopup({ visible: true, message: 'Song already downloaded', type: 'info' });
+                    fetchLibrary(); // Refresh library status
                 } else {
                     setPopup({ visible: true, message: 'Download successful!', type: 'success' });
+                    fetchLibrary(); // Refresh library status
                 }
             } else {
                 setPopup({ visible: true, message: data.error || 'Download failed.', type: 'error' });
@@ -142,15 +168,15 @@ const Results = () => {
                                 <span className="album-name">{track.album.name}</span>
                             </div>
                             <button
-                                className={`download-button ${downloading[track.id] ? 'loading' : ''}`}
-                                onClick={() => handleDownload(track)}
-                                disabled={downloading[track.id]}
+                                className={`download-button ${downloading[track.id] ? 'loading' : ''} ${isTrackDownloaded(track) ? 'downloaded' : ''}`}
+                                onClick={() => !isTrackDownloaded(track) && handleDownload(track)}
+                                disabled={downloading[track.id] || isTrackDownloaded(track)}
                             >
                                 <span className="btn-text">
-                                    {downloading[track.id] ? 'Downloading...' : 'Download'}
+                                    {downloading[track.id] ? 'Downloading...' : (isTrackDownloaded(track) ? 'Downloaded' : 'Download')}
                                 </span>
                                 <span className="btn-icon">
-                                    {downloading[track.id] ? <FiRefreshCw className="spin" /> : <FiDownload />}
+                                    {downloading[track.id] ? <FiRefreshCw className="spin" /> : (isTrackDownloaded(track) ? <FiCheck /> : <FiDownload />)}
                                 </span>
                             </button>
                         </div>
