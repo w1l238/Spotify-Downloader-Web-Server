@@ -14,6 +14,24 @@
     animation: fadeInUp 0.5s ease forwards;
 }
 
+/* Fix desktop scrolling by accounting for the 1rem top margin of the navbar */
+/* The navbar is relative, so it pushes content down. We need to ensure the total height doesn't exceed 100vh. */
+@media (min-width: 769px) {
+    #root {
+        height: 100vh;
+        overflow: hidden; /* Prevent body scroll */
+        display: flex;
+        flex-direction: column;
+    }
+
+    main {
+        flex: 1;
+        overflow-y: auto; /* Allow main content to scroll independently */
+        /* Padding bottom to ensure content isn't cut off */
+        padding-bottom: 1rem; 
+    }
+}
+
 @media (max-width: 768px) {
     main {
         padding-bottom: 6rem; /* Space for the fixed bottom navbar */
