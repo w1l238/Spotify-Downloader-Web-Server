@@ -12,7 +12,8 @@
     color: white;
     min-height: 4rem;
     position: relative;
-    margin: 1rem; /* Add some margin to show the background around the navbar */
+    margin: 1rem 1rem 0rem 1rem; /* Add some margin to show the background around the navbar */
+    z-index: 100; /* Ensure it stays above content on scroll in some layouts */
 }
 
 .navbar-left {
@@ -41,6 +42,46 @@
 
 .nav-link.active {
     color: white; /* White active */
+}
+
+.nav-link .nav-icon {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: inline-block; /* Required for 3D transforms */
+}
+
+/* Music icon animation - Dance */
+.nav-link:hover .nav-icon.music-icon,
+.nav-link.active .nav-icon.music-icon {
+    animation: music-dance 0.8s ease-in-out;
+    transform: scale(1.2); /* Maintain scale after animation */
+}
+
+@keyframes music-dance {
+    0% { transform: scale(1.2) rotate(0deg); }
+    20% { transform: scale(1.2) rotate(-20deg); }
+    40% { transform: scale(1.2) rotate(15deg); }
+    60% { transform: scale(1.2) rotate(-10deg); }
+    80% { transform: scale(1.2) rotate(5deg); }
+    100% { transform: scale(1.2) rotate(0deg); }
+}
+
+/* Search icon animation - Globe spin only on the lens */
+.nav-link:hover .nav-icon.search-icon .search-lens,
+.nav-link.active .nav-icon.search-icon .search-lens {
+    animation: spin-tilted 0.8s ease-in-out;
+    transform-origin: 11px 11px; /* Center of the circle */
+}
+
+/* Remove rotation from the whole icon container, keep potentially other transforms */
+.nav-link:hover .nav-icon.search-icon,
+.nav-link.active .nav-icon.search-icon {
+    animation: none;
+    transform: scale(1.2); /* Keep the scale effect on the whole icon */
+}
+
+@keyframes spin-tilted {
+    from { transform: rotate3d(1, 1, 0, 0deg); }
+    to { transform: rotate3d(1, 1, 0, 360deg); }
 }
 
 .nav-link:hover {
@@ -93,6 +134,20 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.navbar-search-btn-icon {
+    display: inline-block;
+}
+
+.navbar .search-icon-btn:hover {
+    transform: scale(1.2);
+}
+
+.navbar .search-icon-btn:hover .search-lens {
+    animation: spin-tilted 0.8s ease-in-out;
+    transform-origin: 11px 11px;
 }
 
 .navbar-links {
@@ -114,8 +169,9 @@
     color: white;
 }
 
-.settings-icon:hover {
-    transform: rotate(240deg);
+.settings-icon:hover,
+.settings-icon.active {
+    transform: rotate(240deg) scale(1.2);
     color: white;
 }
 
