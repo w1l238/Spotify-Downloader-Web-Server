@@ -50,11 +50,24 @@ const NavBar = () => {
                     </svg>
                 </div>
                 <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
-                    <FiSearch className="nav-icon" />
+                    <svg 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        className="nav-icon search-icon"
+                        width="1em" 
+                        height="1em"
+                    >
+                        <circle cx="11" cy="11" r="8" className="search-lens"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" className="search-handle"></line>
+                    </svg>
                     <span>Search</span>
                 </Link>
                 <Link to="/library" className={`nav-link ${location.pathname === '/library' ? 'active' : ''}`}>
-                    <FiMusic className="nav-icon" />
+                    <FiMusic className="nav-icon music-icon" />
                     <span>Library</span>
                 </Link>
             </div>
@@ -70,7 +83,20 @@ const NavBar = () => {
                             onKeyPress={handleKeyPress}
                         />
                         <button onClick={handleSearch} className="search-icon-btn">
-                            <FiSearch />
+                            <svg 
+                                viewBox="0 0 24 24" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round" 
+                                className="navbar-search-btn-icon"
+                                width="1em" 
+                                height="1em"
+                            >
+                                <circle cx="11" cy="11" r="8" className="search-lens"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" className="search-handle"></line>
+                            </svg>
                         </button>
                     </div>
                 )}
