@@ -45,7 +45,7 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <Toaster position="bottom-right" toastOptions={{
+            <Toaster position={window.innerWidth <= 768 ? "top-center" : "bottom-center"} toastOptions={{
                 style: {
                     background: 'transparent',
                     color: 'white',
@@ -55,7 +55,18 @@ const Home = () => {
                     boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
                 }
             }} />
-                <div className="search-container" style={{ animationDelay: '0.1s' }}>
+            
+            <div className="mobile-focal-icon">
+                <svg viewBox="0 0 100 100" className="glass-svg">
+                    <circle cx="0" cy="0" r="0" className="glass-circle" />
+                    <g className="glass-paths">
+                        <path d="M50,28 V64 M34,50 L50,64 L66,50" />     │
+                        <path d="M32,76 H68" />
+                    </g>
+                </svg>
+            </div>
+
+            <div className="search-container" style={{ animationDelay: '0.1s' }}>
                     <input
                         type="text"
                         placeholder="Search for a song..."
@@ -65,8 +76,26 @@ const Home = () => {
                         onFocus={() => document.body.classList.add('search-focused')}
                         onBlur={() => document.body.classList.remove('search-focused')}
                     />
-                    <button onClick={handleSearch} className="search-icon-btn">
-                        <FiSearch />
+                    <button 
+                        onClick={handleSearch} 
+                        className="search-icon-btn"
+                        onFocus={() => document.body.classList.add('search-focused')}
+                        onBlur={() => document.body.classList.remove('search-focused')}
+                    >
+                        <svg 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            className="home-search-icon"
+                            width="1em" 
+                            height="1em"
+                        >
+                            <circle cx="11" cy="11" r="8" className="search-lens"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" className="search-handle"></line>
+                        </svg>
                     </button>
                 </div>
         </div>
