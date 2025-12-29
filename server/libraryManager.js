@@ -4,6 +4,7 @@ import { parseFile } from 'music-metadata';
 import { fileURLToPath } from 'url';
 import NodeID3 from 'node-id3';
 import { info, error } from './logger.js';
+import pLimit from 'p-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,14 +92,19 @@ async function getFilesRecursively(dir) {
 export async function refreshLibrary() {
     if (isScanning) return libraryCache.map(song => ({ ...song, isLiked: favorites.has(song.id) }));
     isScanning = true;
+    const startTime = Date.now();
     info('Starting library scan...');
 
     try {
         const downloadsDir = getDownloadsDir();
         const files = await getFilesRecursively(downloadsDir);
-        const songs = [];
-
-        for (const filePath of files) {
+        info(`Found ${files.length} MP3 files. Starting parallel metadata parsing (concurrency: 10)...`);
+        
+        // Use p-limit to control concurrency (e.g., 10 concurrent parsers)
+        const limit = pLimit(10);
+        let processedCount = 0;
+        
+        const tasks = files.map(filePath => limit(async () => {
             try {
                 const metadata = await parseFile(filePath);
                 const relPath = path.relative(downloadsDir, filePath);
@@ -106,7 +112,12 @@ export async function refreshLibrary() {
                 // Construct a unique ID (relative path is good enough for file system based)
                 const id = Buffer.from(relPath).toString('base64');
 
-                songs.push({
+                processedCount++;
+                if (processedCount % 50 === 0 || processedCount === files.length) {
+                    info(`Progress: ${processedCount}/${files.length} files parsed...`);
+                }
+
+                return {
                     id: id,
                     path: relPath, // Store relative path for security/portability
                     title: metadata.common.title || path.basename(filePath, '.mp3'),
@@ -114,16 +125,19 @@ export async function refreshLibrary() {
                     album: metadata.common.album || 'Unknown Album',
                     duration: metadata.format.duration || 0, // Duration in seconds
                     year: metadata.common.year || null,
-                    // We can add logic to extract/serve album art later if needed, 
-                    // usually involves reading the buffer or serving a separate endpoint
-                });
+                };
             } catch (err) {
                 error(`Failed to parse metadata for ${filePath}: ${err.message}`);
+                return null;
             }
-        }
+        }));
+
+        const results = await Promise.all(tasks);
+        const songs = results.filter(song => song !== null);
         
         libraryCache = songs;
-        info(`Library scan complete. Found ${songs.length} songs.`);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        info(`Library scan complete. Found ${songs.length} songs. Took ${duration}s.`);
     } catch (err) {
         error(`Library scan failed: ${err.message}`);
         throw err;
