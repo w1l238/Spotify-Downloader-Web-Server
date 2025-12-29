@@ -2,7 +2,46 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FiGrid, FiList, FiTrash2, FiMusic, FiSearch, FiRefreshCw, FiArrowLeft, FiDisc, FiX, FiCheck, FiEdit, FiHeart, FiMoreVertical } from 'react-icons/fi';
 import { LuHeartOff } from 'react-icons/lu';
 import toast, { Toaster } from 'react-hot-toast';
+import { useInView } from 'react-intersection-observer';
 import './css/Library.css';
+
+const LazyAlbumCard = ({ album, index, animationsDone, handleAlbumClick }) => {
+    const { ref, inView } = useInView({
+        triggerOnce: true, // Only trigger once to load content
+        rootMargin: '200px 0px', // Preload content 200px before it comes into view
+        threshold: 0
+    });
+
+    return (
+        <div 
+            ref={ref}
+            className={`album-card-wrapper ${!animationsDone ? 'fade-in' : ''}`}
+            style={{ animationDelay: !animationsDone ? `${Math.min(index * 0.03, 0.5)}s` : '0s', minHeight: '250px' }}
+        >
+            {inView ? (
+                <div 
+                    className="album-card" 
+                    onClick={() => handleAlbumClick(album)}
+                >
+                    <div className="album-art">
+                        <img 
+                            src={`http://localhost:3001/api/files/${encodeURIComponent(album.artId)}/art`} 
+                            alt={album.name}
+                            onError={(e) => { e.target.onerror = null; e.target.src = 'data:image/svg+xml;base64,...'; e.target.style.display = 'none'; }}
+                            onLoad={(e) => e.target.style.display = 'block'}
+                        />
+                        <FiDisc style={{ display: 'none', fontSize: '3rem', opacity: 0.5 }} /> 
+                    </div>
+                    <div className="album-info">
+                        <h3 title={album.name}>{album.name}</h3>
+                        <p title={album.artist}>{album.artist}</p>
+                        <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{album.songs.length} songs</p>
+                    </div>
+                </div>
+            ) : null}
+        </div>
+    );
+};
 
 const Library = () => {
     const [songs, setSongs] = useState([]);
@@ -529,31 +568,13 @@ const Library = () => {
                     {view === 'albums' && (
                         <div className="album-grid">
                             {filteredContent.map((album, index) => (
-                                <div 
+                                <LazyAlbumCard 
                                     key={album.name}
-                                    className={`album-card-wrapper ${!animationsDone ? 'fade-in' : ''}`}
-                                    style={{ animationDelay: !animationsDone ? `${Math.min(index * 0.03, 0.5)}s` : '0s' }}
-                                >
-                                    <div 
-                                        className="album-card" 
-                                        onClick={() => handleAlbumClick(album)}
-                                    >
-                                        <div className="album-art">
-                                            <img 
-                                                src={`http://localhost:3001/api/files/${encodeURIComponent(album.artId)}/art`} 
-                                                alt={album.name}
-                                                onError={(e) => { e.target.onerror = null; e.target.src = 'data:image/svg+xml;base64,...'; /* Fallback handled by CSS gradient mostly */ e.target.style.display = 'none'; }}
-                                                onLoad={(e) => e.target.style.display = 'block'}
-                                            />
-                                            <FiDisc style={{ display: 'none', fontSize: '3rem', opacity: 0.5 }} /> 
-                                        </div>
-                                        <div className="album-info">
-                                            <h3 title={album.name}>{album.name}</h3>
-                                            <p>{album.artist}</p>
-                                            <p style={{ fontSize: '0.8rem', opacity: 0.5 }}>{album.songs.length} songs</p>
-                                        </div>
-                                    </div>
-                                </div>
+                                    album={album}
+                                    index={index}
+                                    animationsDone={animationsDone}
+                                    handleAlbumClick={handleAlbumClick}
+                                />
                             ))}
                         </div>
                     )}
