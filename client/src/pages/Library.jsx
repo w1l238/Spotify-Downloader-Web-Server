@@ -23,7 +23,14 @@ const Library = () => {
     const [showBulkBar, setShowBulkBar] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [menuOpenUpwards, setMenuOpenUpwards] = useState(false);
+    const [menuCoords, setMenuCoords] = useState({ top: 0, right: 0 });
     const animationTimer = useRef(null);
+    const containerRef = useRef(null);
+
+    const activeSong = useMemo(() => 
+        songs.find(s => s.id === openMenuId), 
+    [songs, openMenuId]);
+
 
     useEffect(() => {
         document.title = 'Library - Spotify Downloader';
@@ -319,6 +326,8 @@ const Library = () => {
 
     const handleAlbumClick = (album) => {
         if (animationTimer.current) clearTimeout(animationTimer.current);
+        if (containerRef.current) containerRef.current.scrollTop = 0;
+
         setAnimationsDone(false);
         setSelectedAlbum(album);
         setView('songs');
@@ -330,6 +339,8 @@ const Library = () => {
 
     const handleBack = () => {
         if (animationTimer.current) clearTimeout(animationTimer.current);
+        if (containerRef.current) containerRef.current.scrollTop = 0;
+
         setAnimationsDone(false);
         setView('albums');
         setSelectedAlbum(null);
@@ -448,10 +459,11 @@ const Library = () => {
 
     return (
         <div 
+            ref={containerRef}
             className={`library-container ${openMenuId ? 'has-active-menu' : ''} ${isSelectionMode ? 'selection-mode' : ''}`} 
             onClick={handleContainerClick}
         >
-            <Toaster position="bottom-right" toastOptions={{
+            <Toaster position={window.innerWidth <= 768 ? "top-center" : "bottom-center"} toastOptions={{
                 className: '',
                 style: {
                     background: 'transparent',
@@ -480,7 +492,7 @@ const Library = () => {
                         <FiSearch style={{ marginRight: '0.5rem', opacity: 0.7 }} />
                         <input 
                             type="text" 
-                            placeholder={view === 'albums' ? "Search albums..." : "Search in album..."}
+                            placeholder={view === 'albums' ? "Search albums..." : "Search song..."}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -488,7 +500,7 @@ const Library = () => {
 
                     <div className={`favorites-wrapper ${view === 'albums' ? '' : 'hidden'}`}>
                         <button 
-                            className={`icon-btn ${showFavoritesOnly ? 'active' : ''}`} 
+                            className={`icon-btn favorite-btn ${showFavoritesOnly ? 'active' : ''}`} 
                             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} 
                             title={showFavoritesOnly ? "Show All" : "Show Favorites Only"}
                         >
@@ -497,7 +509,7 @@ const Library = () => {
                     </div>
 
                     <button 
-                        className={`icon-btn ${scanStatus}`} 
+                        className={`icon-btn sync-btn ${scanStatus}`} 
                         onClick={handleScan} 
                         title="Rescan Library"
                         disabled={scanStatus === 'loading'}
@@ -567,11 +579,9 @@ const Library = () => {
                                     <div className="album-actions">
                                         <p>{activeAlbum.songs.length} songs</p>
                                         <button 
-                                            className="icon-btn" 
+                                            className={`icon-btn favorite-btn ${activeAlbum.songs.every(s => s.isLiked) ? 'active' : ''}`} 
                                             style={{ 
-                                                borderRadius: '50%', 
-                                                background: 'rgba(255,255,255,0.1)',
-                                                border: '1px solid rgba(255,255,255,0.1)'
+                                                borderRadius: '50%'
                                             }}
                                             onClick={() => handleLikeAlbum(activeAlbum.name)}
                                             title="Like/Unlike Album"
@@ -582,11 +592,9 @@ const Library = () => {
                                             />
                                         </button>
                                         <button 
-                                            className="icon-btn" 
+                                            className={`icon-btn edit-mode-btn ${isSelectionMode ? 'active' : ''}`} 
                                             style={{ 
-                                                borderRadius: '50%', 
-                                                background: isSelectionMode ? 'rgba(29, 185, 84, 0.7)' : 'rgba(255,255,255,0.1)',
-                                                border: isSelectionMode ? '1px solid #1db954' : '1px solid rgba(255,255,255,0.1)'
+                                                borderRadius: '50%'
                                             }}
                                             onClick={() => {
                                                 if (isSelectionMode) {
@@ -630,7 +638,8 @@ const Library = () => {
                                         onClick={() => isSelectionMode && toggleSelect(song.id)}
                                     >
                                         <div>
-                                            {isSelectionMode ? (
+                                            <span style={{ opacity: 0.5 }}>{index + 1}</span>
+                                            {isSelectionMode && (
                                                 <input 
                                                     type="checkbox" 
                                                     className="library-checkbox"
@@ -638,8 +647,6 @@ const Library = () => {
                                                     onChange={() => toggleSelect(song.id)}
                                                     onClick={(e) => e.stopPropagation()}
                                                 />
-                                            ) : (
-                                                <span style={{ opacity: 0.5 }}>{index + 1}</span>
                                             )}
                                         </div>
                                         <div style={{ fontWeight: 'bold' }}>{song.title}</div>
@@ -647,6 +654,10 @@ const Library = () => {
                                         <div className="action-container" style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end' }}>
                                             <button 
                                                 className="icon-btn more-btn" 
+                                                style={{ 
+                                                    opacity: isSelectionMode ? 0 : 1,
+                                                    pointerEvents: isSelectionMode ? 'none' : 'auto'
+                                                }}
                                                 onClick={(e) => { 
                                                     e.stopPropagation(); 
                                                     const rect = e.currentTarget.getBoundingClientRect();
@@ -683,6 +694,9 @@ const Library = () => {
                     {filteredContent.length === 0 && !loading && (
                         <div style={{ textAlign: 'center', marginTop: '4rem', opacity: 0.5 }}>
                             No items found.
+                            <div>
+                                <b>Is the backend running?</b>
+                            </div>
                         </div>
                     )}
                 </>
@@ -778,8 +792,9 @@ const Library = () => {
                 <div className="bulk-action-bar-container">
                     <div className={`bulk-action-bar ${isClosing ? 'is-closing' : ''}`}>
                         <div className="bulk-info">
-                            <span className="count">{selectedIds.length} Selected</span>
-                            <span>Selected</span>
+                            <span className="count">
+                                {selectedIds.length} <span className="show-mobile">Selected</span>
+                            </span>
                         </div>
                         <div className="bulk-actions-buttons">
                             <button className="bulk-btn like" onClick={() => handleBulkLike(true)} title="Like Selected">
