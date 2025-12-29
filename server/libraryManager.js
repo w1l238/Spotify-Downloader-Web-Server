@@ -3,6 +3,7 @@ import path from 'path';
 import { parseFile } from 'music-metadata';
 import { fileURLToPath } from 'url';
 import NodeID3 from 'node-id3';
+import { info, error } from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +30,7 @@ async function saveFavorites() {
     try {
         await fs.writeFile(favoritesPath, JSON.stringify([...favorites], null, 2));
     } catch (e) {
-        console.error('Error saving favorites:', e);
+        error(`Error saving favorites: ${e.message}`);
     }
 }
 
@@ -79,7 +80,7 @@ async function getFilesRecursively(dir) {
         }
     } catch (err) {
         // If directory doesn't exist or other error, return empty
-        if (err.code !== 'ENOENT') console.error(`Error scanning ${dir}:`, err);
+        if (err.code !== 'ENOENT') error(`Error scanning ${dir}: ${err.message}`);
     }
     return results;
 }
@@ -90,7 +91,7 @@ async function getFilesRecursively(dir) {
 export async function refreshLibrary() {
     if (isScanning) return libraryCache.map(song => ({ ...song, isLiked: favorites.has(song.id) }));
     isScanning = true;
-    console.log('Starting library scan...');
+    info('Starting library scan...');
 
     try {
         const downloadsDir = getDownloadsDir();
@@ -117,14 +118,14 @@ export async function refreshLibrary() {
                     // usually involves reading the buffer or serving a separate endpoint
                 });
             } catch (err) {
-                console.error(`Failed to parse metadata for ${filePath}:`, err.message);
+                error(`Failed to parse metadata for ${filePath}: ${err.message}`);
             }
         }
         
         libraryCache = songs;
-        console.log(`Library scan complete. Found ${songs.length} songs.`);
+        info(`Library scan complete. Found ${songs.length} songs.`);
     } catch (err) {
-        console.error('Library scan failed:', err);
+        error(`Library scan failed: ${err.message}`);
         throw err;
     } finally {
         isScanning = false;
@@ -163,18 +164,29 @@ export async function deleteSong(id) {
         libraryCache = libraryCache.filter(s => s.id !== id);
         
         // Optional: Try to remove empty parent directories
-        const dir = path.dirname(fullPath);
+        const albumDir = path.dirname(fullPath);
         try {
-            const files = await fs.readdir(dir);
-            if (files.length === 0) {
-                await fs.rmdir(dir); // remove album folder if empty
-                // Could also check artist folder, but keeping it simple for now
+            const albumFiles = await fs.readdir(albumDir);
+            if (albumFiles.length === 0) {
+                await fs.rmdir(albumDir); // remove album folder if empty
+                
+                // Check if artist folder is empty and remove it if so
+                const artistDir = path.dirname(albumDir);
+                
+                // Safety check: Ensure we are not deleting the root downloads directory
+                // and that the artist directory is actually a subdirectory of downloadsDir
+                if (artistDir !== downloadsDir && artistDir.startsWith(downloadsDir)) {
+                    const artistFiles = await fs.readdir(artistDir);
+                    if (artistFiles.length === 0) {
+                        await fs.rmdir(artistDir);
+                    }
+                }
             }
         } catch (e) { /* ignore cleanup errors */ }
 
         return true;
     } catch (err) {
-        console.error('Error deleting file:', err);
+        error(`Error deleting file: ${err.message}`);
         throw err;
     }
 }
@@ -221,7 +233,7 @@ export async function getSongArt(id) {
         }
         return null;
     } catch (err) {
-        console.error('Error extracting art:', err);
+        error(`Error extracting art: ${err.message}`);
         return null;
     }
 }
@@ -247,7 +259,7 @@ export async function updateSongMetadata(id, tags) {
         libraryCache = [];
         return true;
     } catch (err) {
-        console.error('Error updating metadata:', err);
+        error(`Error updating metadata: ${err.message}`);
         throw err;
     }
 }
