@@ -10,6 +10,8 @@ body.library-page {
     position: relative; /* Ensure relative positioning for contained fixed elements */
 }
 
+
+
 .library-container.has-active-menu::before {
     content: '';
     position: fixed;
@@ -323,6 +325,10 @@ body.library-page {
     margin: 0;
     font-size: 0.9rem;
     color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
 }
 
 /* Song List within Album */
