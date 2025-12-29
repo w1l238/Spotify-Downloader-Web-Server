@@ -28,7 +28,6 @@
         flex: 1;
         overflow-y: auto; /* Allow main content to scroll independently */
         /* Padding bottom to ensure content isn't cut off */
-        padding-bottom: 1rem; 
     }
 }
 
