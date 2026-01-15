@@ -3,6 +3,7 @@ import { FiGrid, FiList, FiTrash2, FiMusic, FiSearch, FiRefreshCw, FiArrowLeft, 
 import { LuHeartOff } from 'react-icons/lu';
 import toast, { Toaster } from 'react-hot-toast';
 import { useInView } from 'react-intersection-observer';
+import { API_BASE_URL } from '../config';
 import './css/Library.css';
 
 const LazyAlbumCard = ({ album, index, animationsDone, handleAlbumClick, lastUpdate }) => {
@@ -25,7 +26,7 @@ const LazyAlbumCard = ({ album, index, animationsDone, handleAlbumClick, lastUpd
                 >
                     <div className="album-art">
                         <img 
-                            src={`http://localhost:3001/api/files/${encodeURIComponent(album.artId)}/art?t=${lastUpdate}`} 
+                            src={`${API_BASE_URL}/api/files/${encodeURIComponent(album.artId)}/art?t=${lastUpdate}`} 
                             alt={album.name}
                             onError={(e) => { e.target.onerror = null; e.target.src = 'data:image/svg+xml;base64,...'; e.target.style.display = 'none'; }}
                             onLoad={(e) => e.target.style.display = 'block'}
@@ -94,7 +95,7 @@ const Library = () => {
     const fetchLibrary = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:3001/api/library`);
+            const response = await fetch(`${API_BASE_URL}/api/library`);
             if (response.ok) {
                 const data = await response.json();
                 setSongs(data);
@@ -113,7 +114,7 @@ const Library = () => {
     const handleScan = async () => {
         setScanStatus('loading');
         try {
-            const response = await fetch(`http://localhost:3001/api/library/scan`);
+            const response = await fetch(`${API_BASE_URL}/api/library/scan`);
             // Add 1 second artificial delay for better UX
             await new Promise(resolve => setTimeout(resolve, 1000));
             
@@ -161,7 +162,7 @@ const Library = () => {
             const newIsLiked = !song.isLiked;
             setSongs(songs.map(s => s.id === song.id ? { ...s, isLiked: newIsLiked } : s));
 
-            const response = await fetch(`http://localhost:3001/api/files/${encodeURIComponent(song.id)}/toggle-favorite`, {
+            const response = await fetch(`${API_BASE_URL}/api/files/${encodeURIComponent(song.id)}/toggle-favorite`, {
                 method: 'POST'
             });
             
@@ -194,7 +195,7 @@ const Library = () => {
                 return s;
             }));
 
-            const response = await fetch(`http://localhost:3001/api/library/bulk/favorite`, {
+            const response = await fetch(`${API_BASE_URL}/api/library/bulk/favorite`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids, shouldLike })
@@ -237,7 +238,7 @@ const Library = () => {
         if (!song) return;
 
         try {
-            const response = await fetch(`http://localhost:3001/api/files/${encodeURIComponent(song.id)}/metadata`, {
+            const response = await fetch(`${API_BASE_URL}/api/files/${encodeURIComponent(song.id)}/metadata`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -267,7 +268,7 @@ const Library = () => {
         if (!deleteModal.songId) return;
 
         try {
-            const response = await fetch(`http://localhost:3001/api/files/${encodeURIComponent(deleteModal.songId)}`, {
+            const response = await fetch(`${API_BASE_URL}/api/files/${encodeURIComponent(deleteModal.songId)}`, {
                 method: 'DELETE',
             });
 
@@ -416,7 +417,7 @@ const Library = () => {
             // Optimistic update
             setSongs(songs.map(s => selectedIds.includes(s.id) ? { ...s, isLiked: shouldLike } : s));
 
-            const response = await fetch(`http://localhost:3001/api/library/bulk/favorite`, {
+            const response = await fetch(`${API_BASE_URL}/api/library/bulk/favorite`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: selectedIds, shouldLike })
@@ -438,7 +439,7 @@ const Library = () => {
         if (selectedIds.length === 0) return;
 
         try {
-            const response = await fetch(`http://localhost:3001/api/library/bulk/delete`, {
+            const response = await fetch(`${API_BASE_URL}/api/library/bulk/delete`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ids: selectedIds })
@@ -588,12 +589,12 @@ const Library = () => {
                              <div 
                                 className={`album-view-header ${!animationsDone ? 'fade-in' : ''}`}
                                 style={{ 
-                                    '--album-art-url': `url(http://localhost:3001/api/files/${encodeURIComponent(activeAlbum.artId)}/art?t=${lastUpdate})` 
+                                    '--album-art-url': `url(${API_BASE_URL}/api/files/${encodeURIComponent(activeAlbum.artId)}/art?t=${lastUpdate})` 
                                 }}
                              >
                                 <div className="album-view-art">
                                     <img 
-                                        src={`http://localhost:3001/api/files/${encodeURIComponent(activeAlbum.artId)}/art?t=${lastUpdate}`} 
+                                        src={`${API_BASE_URL}/api/files/${encodeURIComponent(activeAlbum.artId)}/art?t=${lastUpdate}`} 
                                         alt={activeAlbum.name}
                                         onError={(e) => { e.target.style.display = 'none'; }}
                                     />

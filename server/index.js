@@ -439,10 +439,34 @@ app.get('/api/files/:id/art', async (req, res) => {
 
 app.put('/api/files/:id/metadata', async (req, res) => {
     const { id } = req.params;
-    const { title, artist, album, trackNumber, year } = req.body;
+    const { title, artist, album, trackNumber, year, artworkUrl } = req.body;
     try {
         info(`Updating metadata for song ID: ${id}`);
         const tags = { title, artist, album, trackNumber, year };
+
+        if (artworkUrl) {
+            try {
+                const imageResponse = await fetch(artworkUrl);
+                if (imageResponse.ok) {
+                    const imageBuffer = await imageResponse.arrayBuffer();
+                    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+                    tags.image = {
+                        mime: contentType,
+                        type: {
+                            id: 3,
+                            name: 'front cover'
+                        },
+                        description: 'Album Art',
+                        imageBuffer: Buffer.from(imageBuffer)
+                    };
+                } else {
+                    warning(`Failed to fetch artwork from URL: ${artworkUrl}`);
+                }
+            } catch (imgErr) {
+                warning(`Error fetching artwork: ${imgErr.message}`);
+            }
+        }
+
         await updateSongMetadata(id, tags);
         info(`Metadata updated for: "${title}" by "${artist}"`);
         res.json({ message: 'Metadata updated successfully.' });
